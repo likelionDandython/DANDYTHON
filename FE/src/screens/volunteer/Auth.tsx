@@ -1,9 +1,15 @@
-import { Link } from 'react-router-dom'
+import { useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import { authApi } from '../../api/services'
 import { Button } from '../../components/common/Button'
 import { Chip, ToggleChipGroup } from '../../components/common/Chip'
-import { Agreements, Field } from '../../components/common/Form'
+import { Agreements, ErrorText, Field } from '../../components/common/Form'
 import { Icon, type IconName } from '../../components/common/Icon'
 import { Screen, Spacer, StepHeader, TopBar } from '../../components/common/Layout'
+import { homePath, useAuth } from '../../auth/AuthContext'
+import { buildConsents, completeSignup, getDraft, patchDraft, VOLUNTEER_AGREEMENTS } from '../../auth/signup'
+import { useAction } from '../../hooks/useApi'
+import { ageFromBirth } from '../../lib/format'
 
 /** 01 온보딩 */
 export function VolunteerOnboarding() {
@@ -52,27 +58,38 @@ export function Pager({ index = 0, count = 3 }: { index?: number; count?: number
 
 /** 02 로그인 */
 export function VolunteerLogin() {
+  const navigate = useNavigate()
+  const { login } = useAuth()
+  const { pending, error, run, setError } = useAction()
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+
+  const submit = async () => {
+    const session = await run(() => authApi.login({ email, password }))
+    if (!session) return
+    if (session.role !== 'VOLUNTEER') return setError('봉사자 계정이 아니에요. 보호자 앱에서 로그인해 주세요.')
+    login(session)
+    navigate(homePath(session), { replace: true })
+  }
+
   return (
     <Screen bodyStyle={{ gap: 12 }}>
       <TopBar />
       <div style={{ height: 8 }} />
       <h1 className="t-h1" style={{ fontSize: 24 }}>
-        휴대폰 번호로
+        이메일로
         <br />
         로그인해 주세요
       </h1>
-      <p className="t-sub">동행 일정과 긴급 연락이 이 번호로 전달돼요.</p>
+      <p className="t-sub">동행 일정과 긴급 연락이 이 계정으로 전달돼요.</p>
       <div style={{ height: 4 }} />
-      <Field
-        label="휴대폰 번호"
-        defaultValue="010-1234-5678"
-        inputMode="tel"
-        suffix={<button className="field__suffix">인증번호 받기</button>}
-      />
-      <Field label="인증번호" placeholder="6자리 숫자" inputMode="numeric" maxLength={6} />
-      <span className="t-caption t-accent t-medium">남은 시간 02:48</span>
+      <Field label="이메일" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+      <Field label="비밀번호" type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} />
+      <ErrorText>{error}</ErrorText>
       <Spacer />
-      <Button to="/volunteer/home">로그인</Button>
+      <Button onClick={submit} disabled={pending || !email || !password}>
+        {pending ? '로그인 중…' : '로그인'}
+      </Button>
       <p className="t-sub t-medium center">
         처음이신가요?{' '}
         <Link to="/volunteer/signup/1" style={{ textDecoration: 'underline' }}>
@@ -85,17 +102,37 @@ export function VolunteerLogin() {
 
 /** 10 봉사자 등록 1 · 기본 정보 */
 export function VolunteerSignup1() {
+  const navigate = useNavigate()
+  const draft = getDraft('VOLUNTEER')
+  const [name, setName] = useState(draft.name)
+  const [birth, setBirth] = useState('')
+  const [phone, setPhone] = useState(draft.phone)
+  const [email, setEmail] = useState(draft.email)
+  const [password, setPassword] = useState(draft.password)
+  const [error, setError] = useState<string | null>(null)
+
+  const next = () => {
+    const age = ageFromBirth(birth)
+    if (!name.trim() || !phone.trim() || !email.trim() || password.length < 8) return setError('이름, 휴대폰, 이메일을 입력하고 비밀번호는 8자 이상으로 해주세요.')
+    if (age === null) return setError('생년월일을 2004.05.21 형식으로 입력해 주세요.')
+    if (age < 18) return setError('만 18세 이상부터 동행 봉사에 참여할 수 있어요.')
+    patchDraft('VOLUNTEER', { name: name.trim(), phone: phone.trim(), email: email.trim(), password })
+    navigate('/volunteer/signup/2')
+  }
+
   return (
     <Screen>
       <StepHeader title="봉사자 등록" step={1} />
       <h1 className="t-h1">기본 정보를 알려주세요</h1>
-      <Field label="이름" defaultValue="최지인" />
-      <Field label="생년월일" defaultValue="2004.05.21" />
-      <Field label="휴대폰 번호" defaultValue="010-1234-5678" suffix={<Chip>인증 완료</Chip>} />
-      <Field label="소속 (선택)" defaultValue="경북대학교 컴퓨터학부" />
+      <Field label="이름" value={name} onChange={(e) => setName(e.target.value)} />
+      <Field label="생년월일" placeholder="2004.05.21" inputMode="numeric" value={birth} onChange={(e) => setBirth(e.target.value)} />
+      <Field label="휴대폰 번호" placeholder="010-1234-5678" inputMode="tel" value={phone} onChange={(e) => setPhone(e.target.value)} />
+      <Field label="이메일" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+      <Field label="비밀번호 (8자 이상)" type="password" autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} />
       <p className="t-caption">만 18세 이상부터 동행 봉사에 참여할 수 있어요.</p>
+      <ErrorText>{error}</ErrorText>
       <Spacer />
-      <Button to="/volunteer/signup/2">다음</Button>
+      <Button onClick={next}>다음</Button>
     </Screen>
   )
 }
@@ -149,6 +186,19 @@ function VerifyItem({ icon, title, sub, state, tone }: { icon: IconName; title: 
 
 /** 12 봉사자 등록 3 · 신원 확인·교육 */
 export function VolunteerSignup3() {
+  const navigate = useNavigate()
+  const { login } = useAuth()
+  const { pending, error, run, setError } = useAction()
+  const [checked, setChecked] = useState<boolean[]>([])
+
+  const submit = async () => {
+    const consents = buildConsents(VOLUNTEER_AGREEMENTS, checked)
+    if (!consents) return setError('필수 약관에 모두 동의해 주세요.')
+    patchDraft('VOLUNTEER', { consents })
+    const session = await run(() => completeSignup('VOLUNTEER', login))
+    if (session) navigate('/volunteer/signup/done')
+  }
+
   return (
     <Screen bodyStyle={{ gap: 14 }}>
       <StepHeader title="봉사자 등록" step={3} />
@@ -160,9 +210,12 @@ export function VolunteerSignup3() {
       <VerifyItem icon="id" title="신분증 확인" sub="이름·생년월일 일치 확인" state="완료" tone="green" />
       <VerifyItem icon="play" title="동행 봉사 교육" sub="영상 3편 · 약 20분" state="1/3 시청" tone="orange" />
       <VerifyItem icon="link" title="1365 자원봉사 연결" sub="봉사시간 자동 등록 (선택)" state="연결하기" tone="gray" />
-      <Agreements items={['[필수] 서비스 이용약관', '[필수] 개인정보 수집·이용', '[필수] 위치정보 이용 (동행 중에만)']} />
+      <Agreements items={VOLUNTEER_AGREEMENTS.map((a) => a.label)} onChange={setChecked} />
+      <ErrorText>{error}</ErrorText>
       <Spacer />
-      <Button to="/volunteer/signup/done">등록 신청하기</Button>
+      <Button onClick={submit} disabled={pending}>
+        {pending ? '등록 중…' : '등록 신청하기'}
+      </Button>
     </Screen>
   )
 }

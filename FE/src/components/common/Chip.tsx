@@ -11,14 +11,20 @@ export function ToggleChipGroup({
   label,
   options,
   defaultSelected = [],
+  onChange,
 }: {
   label?: string
   options: string[]
   defaultSelected?: string[]
+  /** 선택이 바뀔 때마다 현재 선택 목록을 알려줘요 */
+  onChange?: (selected: string[]) => void
 }) {
   const [selected, setSelected] = useState<string[]>(defaultSelected)
-  const toggle = (o: string) =>
-    setSelected((prev) => (prev.includes(o) ? prev.filter((x) => x !== o) : [...prev, o]))
+  const toggle = (o: string) => {
+    const next = selected.includes(o) ? selected.filter((x) => x !== o) : [...selected, o]
+    setSelected(next)
+    onChange?.(next)
+  }
   return (
     <div className="field" style={{ gap: 8 }}>
       {label && <span className="t-label">{label}</span>}
@@ -44,8 +50,20 @@ export function ToggleChipGroup({
 }
 
 /** 하나만 고르는 필터 칩 (목록 상단) */
-export function FilterChips({ options, defaultValue }: { options: string[]; defaultValue?: string }) {
-  const [value, setValue] = useState(defaultValue ?? options[0])
+export function FilterChips({
+  options,
+  defaultValue,
+  onChange,
+}: {
+  options: string[]
+  defaultValue?: string
+  onChange?: (value: string) => void
+}) {
+  const [value, setValueState] = useState(defaultValue ?? options[0])
+  const setValue = (v: string) => {
+    setValueState(v)
+    onChange?.(v)
+  }
   return (
     <div className="chip-group" style={{ flexWrap: 'nowrap', overflowX: 'auto' }}>
       {options.map((o) => (

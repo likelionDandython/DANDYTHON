@@ -1,4 +1,4 @@
-import { useState, type InputHTMLAttributes, type ReactNode } from 'react'
+import { useEffect, useState, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes } from 'react'
 import { Icon, type IconName } from './Icon'
 
 type FieldProps = InputHTMLAttributes<HTMLInputElement> & {
@@ -21,6 +21,47 @@ export function Field({ label, icon, suffix, chevron, ...input }: FieldProps) {
         {chevron && <Icon name="chev" size={18} color="var(--icon-muted)" />}
       </span>
     </label>
+  )
+}
+
+/** 라벨 + 선택 상자 (Field 와 같은 모양) */
+export function SelectField({
+  label,
+  icon,
+  options,
+  placeholder,
+  ...select
+}: SelectHTMLAttributes<HTMLSelectElement> & {
+  label: string
+  icon?: IconName
+  options: { value: string | number; label: string }[]
+  placeholder?: string
+}) {
+  return (
+    <label className="field">
+      <span className="t-label">{label}</span>
+      <span className="field__box">
+        {icon && <Icon name={icon} size={20} color="var(--brand-primary)" />}
+        <select className="field__input" {...select}>
+          {placeholder !== undefined && <option value="">{placeholder}</option>}
+          {options.map((o) => (
+            <option key={o.value} value={o.value}>
+              {o.label}
+            </option>
+          ))}
+        </select>
+      </span>
+    </label>
+  )
+}
+
+/** API 오류·안내 문구 */
+export function ErrorText({ children }: { children?: ReactNode }) {
+  if (!children) return null
+  return (
+    <p role="alert" className="t-caption" style={{ color: '#C0392B', margin: 0 }}>
+      {children}
+    </p>
   )
 }
 
@@ -59,8 +100,18 @@ function Box({ on }: { on: boolean }) {
 }
 
 /** 약관 동의 묶음: '전체 동의'를 누르면 전부 켜지고 꺼져요 */
-export function Agreements({ items }: { items: string[] }) {
-  const [checked, setChecked] = useState<boolean[]>(items.map(() => true))
+export function Agreements({ items, onChange }: { items: string[]; onChange?: (checked: boolean[]) => void }) {
+  const [checked, setCheckedState] = useState<boolean[]>(items.map(() => true))
+  const setChecked = (next: boolean[] | ((c: boolean[]) => boolean[])) => {
+    const value = typeof next === 'function' ? next(checked) : next
+    setCheckedState(value)
+    onChange?.(value)
+  }
+  // 처음 상태(전부 동의)를 부모가 알 수 있게 한 번 알려줘요
+  useEffect(() => {
+    onChange?.(checked)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
   const all = checked.every(Boolean)
   return (
     <div className="card" style={{ padding: 16, gap: 0 }}>
