@@ -1,6 +1,6 @@
 /**
  * 디자인 개편 중 "캐릭터 · 신청자 수락" 범위의 라우트.
- * 기존 routes.tsx 는 수정하지 않았어요. 팀이 쓰기로 하면 routes.tsx 의 guardian 섹션 routes 뒤에 펼쳐 넣으면 돼요.
+ * routes.tsx 의 동행 요청 모드 섹션에 펼쳐 넣어 쓰고 있어요.
  *   import { designRoutes } from './design/routes'   →   ...designRoutes.guardian
  */
 import type { ScreenRoute } from '../routes'

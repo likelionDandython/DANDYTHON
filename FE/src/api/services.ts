@@ -11,6 +11,8 @@ import type {
   Hospital,
   LoginBody,
   LoginResult,
+  Mode,
+  ConsentItem,
   MyApplication,
   MyRequestItem,
   Need,
@@ -31,6 +33,14 @@ import type {
 export const authApi = {
   signup: (body: SignupBody) => http.post<SignupResult>('/auth/signup', body),
   login: (body: LoginBody) => http.post<LoginResult>('/auth/login', body),
+}
+
+/** 계정 하나 + 모드 (BE 추가 필요: PATCH /users/me, POST /users/me/consents) */
+export const userApi = {
+  /** 마지막에 쓴 모드 저장 */
+  setMode: (mode: Mode) => http.patch<{ lastMode: Mode }>('/users/me', { lastMode: mode }),
+  /** 모드에 처음 들어갈 때 받은 동의 저장 */
+  addConsents: (consents: { item: ConsentItem; agreed: boolean }[]) => http.post<{ saved: number }>('/users/me/consents', { consents }),
 }
 
 /** 2. 프로필 */

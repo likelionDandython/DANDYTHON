@@ -1,6 +1,6 @@
 /**
  * 서비스 캐릭터 (임시 — 로고·캐릭터가 확정되면 이 파일의 모양과 tokens.css 의 --char-* 색만 바꾸면 돼요)
- * 규칙: 코랄 = 어르신, 틸 = 봉사자. 홈 상단·빈 화면·완료 화면에서만 쓰고 목록 안에는 넣지 않아요.
+ * 규칙: 코랄 = 동행받는 분, 틸 = 봉사자. 홈 상단·빈 화면·완료 화면에서만 쓰고 목록 안에는 넣지 않아요.
  * 봉사자 프로필은 사진 업로드가 없어서(BE 확인) 항상 이 캐릭터가 고정으로 들어가요.
  */
 import type { SVGProps } from 'react'
@@ -49,7 +49,7 @@ function Volunteer() {
   )
 }
 
-const LABEL: Record<Who, string> = { elder: '어르신 캐릭터', volunteer: '봉사자 캐릭터' }
+const LABEL: Record<Who, string> = { elder: '동행받는 분 캐릭터', volunteer: '봉사자 캐릭터' }
 
 /** 캐릭터 한 명 (전신). size = 가로 px */
 export function Character({ who, size = 80, title, ...rest }: { who: Who; size?: number; title?: string } & SVGProps<SVGSVGElement>) {
@@ -82,7 +82,7 @@ export function CharacterPair({
   baseline?: string
   title?: string
 }) {
-  const label = title ?? (waiting ? '하트 아치 아래에서 어르신이 봉사자를 기다리는 그림' : '하트 아치 아래에서 어르신과 봉사자가 함께 걷는 그림')
+  const label = title ?? (waiting ? '하트 아치 아래에서 동행받는 분이 봉사자를 기다리는 그림' : '하트 아치 아래에서 동행받는 분과 봉사자가 함께 걷는 그림')
   return (
     <svg width={width} height={(width * 190) / 260} viewBox="0 0 260 190" role="img" aria-label={label}>
       <path

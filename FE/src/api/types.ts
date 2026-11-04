@@ -1,6 +1,13 @@
 // 병원동행 API 명세서 v0.1 (10/31) 기준 타입 정의
 
+/** 서버가 아직 쓰는 계정 역할. 계정 하나 + 모드 구조로 바뀌면서 FE 는 권한 판단에 쓰지 않아요 (BE 변경 전까지 가입 때만 보내요) */
 export type Role = 'GUARDIAN' | 'VOLUNTEER'
+/** 화면 모드: 동행 요청 모드 / 동행하기 모드. 한 계정이 둘 다 쓸 수 있어요 */
+export type Mode = 'REQUEST' | 'VOLUNTEER'
+/** 누구를 위한 요청인지: 나 / 가족 */
+export type TargetType = 'SELF' | 'FAMILY'
+/** 대구까지 이동 방법 (비용은 동행받는 분이 직접 내요) */
+export type TravelMode = 'BUS_TRAIN' | 'TAXI' | 'FAMILY_CAR'
 export type Gender = 'FEMALE' | 'MALE'
 export type GenderPref = 'ANY' | Gender
 export type MeetPlaceType = 'HOME' | 'STATION' | 'HOSPITAL'
@@ -73,7 +80,12 @@ export type Hospital = { hospitalId: number; name: string; address: string }
 
 // ── 3. 동행 요청 ──
 export type RequestBody = {
-  seniorId: number
+  /** 나를 위한 요청이면 SELF, 가족이면 FAMILY (BE 추가 필요) */
+  targetType: TargetType
+  /** FAMILY 일 때만 */
+  seniorId: number | null
+  /** BE 추가 필요 */
+  travelMode: TravelMode
   date: string
   meetTime: string
   meetPlaceType: MeetPlaceType
@@ -110,6 +122,10 @@ export type MyRequestItem = {
 export type RequestDetail = {
   requestId: number
   status: RequestStatus
+  /** 요청을 등록한 사람. 내 요청에는 신청할 수 없어요 (BE 추가 필요) */
+  requesterId?: number
+  targetType?: TargetType
+  travelMode?: TravelMode
   senior: { name: string; age: number; region: string; phone: string | null }
   date: string
   meetTime: string

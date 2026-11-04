@@ -29,7 +29,7 @@ function infoRows(d: RequestDetail) {
   ] as const
 }
 
-/** 신청자 목록 + 수락 (보호자) — /guardian/applicants?requestId= */
+/** 신청자 목록 + 수락 (요청자) — /guardian/applicants?requestId= */
 export function GuardianApplicants() {
   const requestId = useRequestId()
   const detail = useApi(() => requestApi.detail(requestId), [requestId], !!requestId)
@@ -90,7 +90,7 @@ export function GuardianApplicants() {
             <div className="row" style={{ gap: 12 }}>
               <CharacterAvatar who="elder" size={56} />
               <h1 className="hero__title" style={{ fontSize: 22 }}>
-                {d.senior.name} 어르신과
+                {d.senior.name} 님과
                 <br />
                 함께 갈 분을 골라 주세요
               </h1>

@@ -7,8 +7,10 @@ import { Button } from '../../components/common/Button'
 import { Chip, FilterChips } from '../../components/common/Chip'
 import { ErrorText } from '../../components/common/Form'
 import { Icon, type IconName } from '../../components/common/Icon'
-import { Avatar, Screen, Spacer, TopBar } from '../../components/common/Layout'
+import { Screen, Spacer, TopBar } from '../../components/common/Layout'
 import { TabBar, VOLUNTEER_TABS } from '../../components/common/TabBar'
+import { ModeSwitchButton, ModeSwitchCard } from '../../components/common/ModeSwitch'
+import { CharacterAvatar } from '../../components/common/Character'
 import { RequestCard } from '../../components/volunteer/RequestCard'
 import { useAuth } from '../../auth/AuthContext'
 import { useAction, useApi } from '../../hooks/useApi'
@@ -43,14 +45,17 @@ export function VolunteerHome() {
           <span className="t-sub t-medium">안녕하세요, {session?.name}님</span>
           <span className="t-h1">오늘도 함께 걸어요</span>
         </div>
-        <Icon name="bell" size={26} />
+        <span className="row" style={{ gap: 4 }}>
+          <ModeSwitchButton current="VOLUNTEER" />
+          <Icon name="bell" size={26} />
+        </span>
       </div>
 
       {session && !session.profileCompleted && (
-        <div className="notice">
+        <Link to="/volunteer/profile" className="notice">
           <Icon name="id" size={20} />
           프로필을 완성해야 동행을 신청할 수 있어요
-        </div>
+        </Link>
       )}
 
       {active && (
@@ -124,6 +129,7 @@ function InfoRow({ icon, label, value }: { icon: IconName; label: string; value:
 
 /** 05 요청 상세 */
 export function VolunteerRequestDetail() {
+  const { session } = useAuth()
   const [params] = useSearchParams()
   const requestId = Number(params.get('requestId'))
   const detail = useApi(() => requestApi.detail(requestId), [requestId], !!requestId)
@@ -131,6 +137,8 @@ export function VolunteerRequestDetail() {
   const [message, setMessage] = useState('')
   const [applied, setApplied] = useState(false)
   const r = detail.data
+  /** 내가 올린 요청에는 신청할 수 없어요 */
+  const mine = !!r && !!session && r.requesterId === session.userId
 
   const submit = async () => {
     const res = await apply.run(() => applicationApi.apply(requestId, message))
@@ -160,17 +168,17 @@ export function VolunteerRequestDetail() {
           </div>
           <div className="card" style={{ gap: 14 }}>
             <span style={{ fontSize: 16, fontWeight: 700 }}>
-              {r.senior.name} 어르신 ({r.senior.age}세)
+              {r.senior.name} 님 ({r.senior.age}세)
             </span>
             <div className="row" style={{ gap: 6, flexWrap: 'wrap' }}>
               {r.needs.map((n) => (
                 <Chip key={n}>{NEED_LABEL[n]}</Chip>
               ))}
             </div>
-            {r.notes && <p className="t-sub">“{r.notes}” — 보호자 요청</p>}
+            {r.notes && <p className="t-sub">“{r.notes}” — 요청한 분 메모</p>}
             {r.guardian && (
               <p className="t-sub">
-                보호자 {r.guardian.name} · {r.guardian.phone}
+                요청자 {r.guardian.name} · {r.guardian.phone}
               </p>
             )}
           </div>
@@ -180,17 +188,23 @@ export function VolunteerRequestDetail() {
               동행이 확정되면 상세 주소와 연락처가 공개돼요
             </div>
           )}
-          {r.status === 'RECRUITING' && !applied && (
+          {mine && (
+            <div className="notice">
+              <Icon name="id" size={20} />
+              내가 올린 요청이에요. 내가 올린 요청에는 신청할 수 없어요.
+            </div>
+          )}
+          {r.status === 'RECRUITING' && !applied && !mine && (
             <label className="field">
-              <span className="t-label">보호자에게 전할 말 (선택)</span>
+              <span className="t-label">요청한 분에게 전할 말 (선택)</span>
               <textarea className="textarea" value={message} onChange={(e) => setMessage(e.target.value)} />
             </label>
           )}
           <ErrorText>{apply.error}</ErrorText>
-          {applied && <p className="t-caption t-accent t-medium">신청했어요. 보호자가 수락하면 확정돼요.</p>}
+          {applied && <p className="t-caption t-accent t-medium">신청했어요. 요청한 분이 수락하면 확정돼요.</p>}
           <Spacer />
-          <Button onClick={submit} disabled={apply.pending || applied || r.status !== 'RECRUITING'}>
-            {applied ? '신청 완료' : r.status !== 'RECRUITING' ? '모집이 끝났어요' : apply.pending ? '신청 중…' : '이 동행 맡을게요'}
+          <Button onClick={submit} disabled={apply.pending || applied || mine || r.status !== 'RECRUITING'}>
+            {mine ? '내 요청이에요' : applied ? '신청 완료' : r.status !== 'RECRUITING' ? '모집이 끝났어요' : apply.pending ? '신청 중…' : '이 동행 맡을게요'}
           </Button>
         </>
       )}
@@ -207,9 +221,9 @@ export function VolunteerAccepted() {
   const rows: [string, string][] = r
     ? [
         ['일시', `${formatDateTime(r.date, r.meetTime)} 만남`],
-        ['어르신', `${r.senior.name} 어르신`],
+        ['동행받는 분', `${r.senior.name} 님`],
         ['병원', `${r.hospital.name} ${r.department}`],
-        ['보호자 연락처', r.guardian?.phone ?? '확정 후 공개'],
+        ['요청자 연락처', r.guardian?.phone ?? '확정 후 공개'],
       ]
     : []
   return (
@@ -222,7 +236,7 @@ export function VolunteerAccepted() {
         동행이 확정됐어요
       </h1>
       <p className="t-body center" style={{ color: 'var(--text-secondary)' }}>
-        보호자에게 봉사자 정보가 전달됐어요.
+        요청한 분에게 봉사자 정보가 전달됐어요.
       </p>
       <Status loading={detail.loading} error={detail.error} />
       {rows.length > 0 && (
@@ -319,7 +333,7 @@ export function VolunteerProgress() {
           <>
             <div className="row row--between">
               <div className="col" style={{ gap: 2 }}>
-                <span style={{ fontSize: 19, fontWeight: 700 }}>{d ? `${d.senior.name} 어르신 ${v.endedAt ? '동행 완료' : v.startedAt ? '동행 중' : '동행 준비'}` : '동행'}</span>
+                <span style={{ fontSize: 19, fontWeight: 700 }}>{d ? `${d.senior.name} 님 ${v.endedAt ? '동행 완료' : v.startedAt ? '동행 중' : '동행 준비'}` : '동행'}</span>
                 <span className="t-sub">{d ? `${d.hospital.name} · ${d.department}` : ''}</span>
               </div>
               <Chip>{next ? next.label : v.endedAt ? '완료' : '마무리'}</Chip>
@@ -354,6 +368,10 @@ export function VolunteerProgress() {
                 )
               })}
             </ol>
+            <div className="notice">
+              <Icon name="won" size={20} />
+              수납·약값·택시비는 동행받는 분이 직접 결제해요. 카드나 현금은 맡지 않아요.
+            </div>
             <ErrorText>{act.error}</ErrorText>
             <Spacer />
             <div className="row" style={{ gap: 10 }}>
@@ -363,7 +381,7 @@ export function VolunteerProgress() {
                 disabled={!d?.guardian}
                 onClick={() => d?.guardian && (window.location.href = `tel:${d.guardian.phone}`)}
               >
-                보호자 연락
+                요청자 연락
               </Button>
               <Button className="fill" onClick={advance} disabled={act.pending || !!v.endedAt}>
                 {act.pending ? '처리 중…' : buttonLabel}
@@ -393,22 +411,23 @@ export function VolunteerMyPage() {
   return (
     <Screen footer={tabs}>
       <div className="row" style={{ gap: 14 }}>
-        <Avatar size={60} />
+        <CharacterAvatar who="volunteer" size={60} />
         <div className="col fill" style={{ gap: 2 }}>
           <span style={{ fontSize: 19, fontWeight: 700 }}>{session?.name} 봉사자</span>
-          <span className="t-caption">{p ? `${p.verified ? '인증 봉사자' : '인증 대기'} · ${p.school}` : '프로필 미완성'}</span>
+          <span className="t-caption">{p ? `${p.verified ? '재학 인증' : '재학 인증 전'} · ${p.school}` : '프로필 미완성'}</span>
         </div>
         <button
           type="button"
           aria-label="로그아웃"
           onClick={() => {
             logout()
-            navigate('/volunteer/login', { replace: true })
+            navigate('/login', { replace: true })
           }}
         >
           <Icon name="gear" color="var(--text-secondary)" />
         </button>
       </div>
+      <ModeSwitchCard current="VOLUNTEER" />
       <div className="row" style={{ gap: 10 }}>
         {[
           [`${p?.visitCount ?? 0}회`, '누적 동행'],
