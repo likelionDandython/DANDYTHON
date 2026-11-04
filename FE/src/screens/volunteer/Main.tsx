@@ -358,9 +358,15 @@ export function VolunteerProgress() {
               >
                 요청자 연락
               </Button>
-              <Button className="fill" onClick={advance} disabled={act.pending || !!v.endedAt}>
-                {act.pending ? '처리 중…' : buttonLabel}
-              </Button>
+              {v.endedAt ? (
+                <Button className="fill" to={`/volunteer/memo${v.hasSummary ? '/done' : ''}?visitId=${visitId}`}>
+                  {v.hasSummary ? '진료 요약 보기' : '진료 메모 쓰기'}
+                </Button>
+              ) : (
+                <Button className="fill" onClick={advance} disabled={act.pending}>
+                  {act.pending ? '처리 중…' : buttonLabel}
+                </Button>
+              )}
             </div>
           </>
         )}

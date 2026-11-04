@@ -2,6 +2,7 @@ import type { ReactElement } from 'react'
 import * as A from './screens/common/Account'
 import * as VM from './screens/volunteer/Main'
 import { VolunteerProfile } from './screens/volunteer/Profile'
+import { VolunteerMemoDone, VolunteerMemoFallback, VolunteerMemoWrite } from './screens/volunteer/Memo'
 import * as GM from './screens/guardian/Main'
 import { designRoutes } from './design/routes'
 
@@ -62,6 +63,9 @@ export const sections: AppSection[] = [
       { group: '메인', code: '05', name: '요청 상세', path: '/volunteer/request-detail', element: <VM.VolunteerRequestDetail /> },
       { group: '메인', code: '06', name: '수락 완료', path: '/volunteer/accepted', element: <VM.VolunteerAccepted /> },
       { group: '메인', code: '07', name: '동행 진행', path: '/volunteer/progress', element: <VM.VolunteerProgress /> },
+      { group: '동행 마무리', code: '09', name: '진료 메모 쓰기 + 동의', path: '/volunteer/memo', element: <VolunteerMemoWrite /> },
+      { group: '동행 마무리', code: '10', name: '진료 요약 완료', path: '/volunteer/memo/done', element: <VolunteerMemoDone /> },
+      { group: '동행 마무리', code: '11', name: '요약 실패 · 메모 원문', path: '/volunteer/memo/fallback', element: <VolunteerMemoFallback /> },
       { group: '메인', code: '08', name: 'MY · 모드 전환', path: '/volunteer/my', element: <VM.VolunteerMyPage /> },
     ],
   },
