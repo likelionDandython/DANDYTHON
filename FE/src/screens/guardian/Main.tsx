@@ -18,16 +18,13 @@ import { Icon, type IconName } from '../../components/common/Icon'
 import { Avatar, Screen, Spacer, TopBar } from '../../components/common/Layout'
 import { GUARDIAN_TABS, TabBar } from '../../components/common/TabBar'
 import { ModeSwitchButton, ModeSwitchCard } from '../../components/common/ModeSwitch'
+import { EmptyState, Status } from '../../components/common/States'
 import { useAuth } from '../../auth/AuthContext'
 import { useAction, useApi } from '../../hooks/useApi'
 import { formatDate, formatDateTime, hhmm, todayString } from '../../lib/format'
 
 const tabs = <TabBar tabs={GUARDIAN_TABS} />
 
-function Status({ loading, error }: { loading: boolean; error: string | null }) {
-  if (loading) return <p className="t-caption">불러오는 중…</p>
-  return <ErrorText>{error}</ErrorText>
-}
 
 /** 지금 동행 중인 요청 → 없으면 가장 가까운 확정 요청 */
 function pickActive(list: MyRequestItem[] | null) {
@@ -122,10 +119,13 @@ export function GuardianHome() {
           전체보기
         </Link>
       </div>
-      <Status loading={mine.loading} error={mine.error} />
-      <div className="card card--list">
+      <Status loading={mine.loading} error={mine.error} onRetry={mine.reload} />
+      {!mine.loading && !mine.error && upcoming.length === 0 && (
+        <EmptyState title="다가오는 일정이 없어요" desc="병원 가는 날이 정해지면 동행을 신청해 보세요." />
+      )}
+      <div className="card card--list" hidden={upcoming.length === 0}>
         {upcoming.map((r) => (
-          <Link key={r.requestId} to={r.status === 'CONFIRMED' ? `/guardian/confirmed?requestId=${r.requestId}` : '/guardian/home'} className="list-item" style={{ gap: 14 }}>
+          <Link key={r.requestId} to={r.status === 'CONFIRMED' ? `/guardian/confirmed?requestId=${r.requestId}` : `/guardian/applicants?requestId=${r.requestId}`} className="list-item" style={{ gap: 14 }}>
             <div className="col" style={{ width: 52, height: 52, borderRadius: 14, background: 'var(--bg-canvas)', alignItems: 'center', justifyContent: 'center' }}>
               <span style={{ fontSize: 15, fontWeight: 700 }}>{Number(r.date.slice(5, 7))}.{Number(r.date.slice(8, 10))}</span>
               <span style={{ fontSize: 11, fontWeight: 500, color: 'var(--text-secondary)' }}>{formatDate(r.date).slice(-2, -1)}</span>
@@ -139,7 +139,7 @@ export function GuardianHome() {
             </div>
           </Link>
         ))}
-        {!mine.loading && upcoming.length === 0 && <div className="list-item"><span className="t-body">다가오는 일정이 없어요.</span></div>}
+
       </div>
       <Spacer />
       <Button to="/guardian/apply">새 동행 신청하기</Button>
@@ -342,6 +342,9 @@ export function GuardianConfirmed() {
               일정 확인하기
             </Button>
           </div>
+          <Button variant="ghost" to={`/guardian/cancel?requestId=${d.requestId}`}>
+            요청 취소하기
+          </Button>
         </>
       )}
     </Screen>
@@ -365,7 +368,7 @@ export function GuardianLive() {
       </div>
       <div className="col" style={{ flex: 1, gap: 14, padding: '20px 24px 24px' }}>
         <Status loading={target.loading || loading} error={target.error ?? error} />
-        {!target.requestId && !target.loading && <p className="t-body">진행 중인 동행이 아직 없어요.</p>}
+        {!target.requestId && !target.loading && <EmptyState title="진행 중인 동행이 아직 없어요" desc="봉사자가 확정되면 여기서 단계를 볼 수 있어요." />}
         {d && !v && !loading && <p className="t-body">동행이 확정되면 현황을 볼 수 있어요.</p>}
         {v && d && (
           <>

@@ -146,7 +146,14 @@ function ApplicantCard({ a, requestId }: { a: ApplicationItem; requestId: number
         </p>
       )}
       <div className="col" style={{ gap: 8 }}>
-        <Button to={`/guardian/applicants/confirm?requestId=${requestId}&applicationId=${a.applicationId}`}>이분과 같이 가요</Button>
+        <div className="row" style={{ gap: 8 }}>
+          <Button variant="ghost" style={{ width: 120 }} to={`/guardian/volunteer?userId=${v.userId}&requestId=${requestId}&applicationId=${a.applicationId}`}>
+            프로필 보기
+          </Button>
+          <Button className="fill" to={`/guardian/applicants/confirm?requestId=${requestId}&applicationId=${a.applicationId}`}>
+            이분과 같이 가요
+          </Button>
+        </div>
       </div>
     </article>
   )

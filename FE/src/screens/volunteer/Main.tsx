@@ -10,6 +10,7 @@ import { Icon, type IconName } from '../../components/common/Icon'
 import { Screen, Spacer, TopBar } from '../../components/common/Layout'
 import { TabBar, VOLUNTEER_TABS } from '../../components/common/TabBar'
 import { ModeSwitchButton, ModeSwitchCard } from '../../components/common/ModeSwitch'
+import { EmptyState, Status } from '../../components/common/States'
 import { CharacterAvatar } from '../../components/common/Character'
 import { RequestCard } from '../../components/volunteer/RequestCard'
 import { useAuth } from '../../auth/AuthContext'
@@ -18,10 +19,6 @@ import { dDay, formatDate, formatDateTime, formatTime, hhmm, minutesToText, toda
 
 const tabs = <TabBar tabs={VOLUNTEER_TABS} />
 
-function Status({ loading, error }: { loading: boolean; error: string | null }) {
-  if (loading) return <p className="t-caption">불러오는 중…</p>
-  return <ErrorText>{error}</ErrorText>
-}
 
 /** 지금 진행/확정된 내 동행 (가장 가까운 날짜) */
 function pickActive(apps: MyApplication[] | null) {
@@ -193,7 +190,17 @@ export function VolunteerRequestDetail() {
               내가 올린 요청이에요. 내가 올린 요청에는 신청할 수 없어요.
             </div>
           )}
-          {r.status === 'RECRUITING' && !applied && !mine && (
+          {!mine && session && !session.profileCompleted && r.status === 'RECRUITING' && (
+            <section className="col" style={{ gap: 10, padding: 18, borderRadius: 20, background: 'var(--brand-accent-soft)', alignItems: 'center', textAlign: 'center' }}>
+              <CharacterAvatar who="volunteer" size={64} />
+              <span className="t-body t-bold">프로필을 먼저 완성해 주세요</span>
+              <span className="t-sub">요청한 분이 누구와 함께 가는지 알 수 있도록 필요해요.</span>
+              <Button size="sm" to="/volunteer/profile">
+                프로필 완성하기
+              </Button>
+            </section>
+          )}
+          {r.status === 'RECRUITING' && !applied && !mine && session?.profileCompleted && (
             <label className="field">
               <span className="t-label">요청한 분에게 전할 말 (선택)</span>
               <textarea className="textarea" value={message} onChange={(e) => setMessage(e.target.value)} />
@@ -202,7 +209,7 @@ export function VolunteerRequestDetail() {
           <ErrorText>{apply.error}</ErrorText>
           {applied && <p className="t-caption t-accent t-medium">신청했어요. 요청한 분이 수락하면 확정돼요.</p>}
           <Spacer />
-          <Button onClick={submit} disabled={apply.pending || applied || mine || r.status !== 'RECRUITING'}>
+          <Button onClick={submit} disabled={apply.pending || applied || mine || !session?.profileCompleted || r.status !== 'RECRUITING'}>
             {mine ? '내 요청이에요' : applied ? '신청 완료' : r.status !== 'RECRUITING' ? '모집이 끝났어요' : apply.pending ? '신청 중…' : '이 동행 맡을게요'}
           </Button>
         </>
@@ -301,7 +308,7 @@ export function VolunteerProgress() {
         <TopBar title="동행 진행" />
       </div>
       <div className="col" style={{ flex: 1, gap: 16, padding: '8px 24px 24px', background: 'var(--bg-canvas)' }}>
-        {!visitId && !apps.loading && <p className="t-body">진행할 동행이 아직 없어요.</p>}
+        {!visitId && !apps.loading && <EmptyState title="진행할 동행이 아직 없어요" desc="동행이 확정되면 여기서 단계를 체크해요." action={{ label: '동행 요청 보러 가기', to: '/volunteer/requests' }} />}
         <Status loading={visit.loading || apps.loading} error={visit.error ?? apps.error} />
         {v && (
           <>
@@ -387,7 +394,15 @@ export function VolunteerMyPage() {
     const label = a.status === 'ACCEPTED' ? REQUEST_STATUS_LABEL[a.requestStatus] : APPLICATION_STATUS_LABEL[a.status]
     const tone: 'green' | 'gray' = a.status === 'ACCEPTED' && a.requestStatus !== 'CANCELED' ? 'green' : 'gray'
     const minutes = a.approvedMinutes ?? a.recognizedMinutes
-    return { id: a.applicationId, date: formatDate(a.date) + (minutes ? ` · ${minutesToText(minutes)} 인정` : ''), hospital: a.hospitalName, label, tone }
+    const cancelable = (a.status === 'PENDING' || a.status === 'ACCEPTED') && (a.requestStatus === 'RECRUITING' || a.requestStatus === 'CONFIRMED')
+    return {
+      id: a.applicationId,
+      date: formatDate(a.date) + (minutes ? ` · ${minutesToText(minutes)} 인정` : ''),
+      hospital: a.hospitalName,
+      label,
+      tone,
+      cancelTo: cancelable ? `/volunteer/cancel?applicationId=${a.applicationId}&date=${a.date}&hospital=${encodeURIComponent(a.hospitalName)}` : null,
+    }
   })
 
   return (
@@ -414,7 +429,7 @@ export function VolunteerMyPage() {
         {[
           [`${p?.visitCount ?? 0}회`, '누적 동행'],
           [minutesToText(p?.totalMinutes ?? 0), '봉사시간'],
-          [`${p?.thanksMessages.length ?? 0}개`, '감사 메시지'],
+          [`${p?.thanksMessages?.length ?? 0}개`, '감사 메시지'],
         ].map(([v, l]) => (
           <div key={l} className="card fill" style={{ alignItems: 'center', gap: 2, padding: '14px 0', borderRadius: 16 }}>
             <span style={{ fontSize: 19, fontWeight: 700, color: 'var(--brand-primary)' }}>{v}</span>
@@ -435,12 +450,17 @@ export function VolunteerMyPage() {
               <span className="t-caption">{h.date}</span>
             </div>
             <Chip tone={h.tone}>{h.label}</Chip>
+            {h.cancelTo && (
+              <Link to={h.cancelTo} className="t-sub t-bold t-accent" style={{ minHeight: 44, display: 'flex', alignItems: 'center', paddingLeft: 6 }}>
+                신청 취소
+              </Link>
+            )}
           </div>
         ))}
       </div>
       <div className="card card--list">
         {['프로필 수정', '봉사시간 확인서 발급', '자주 묻는 질문'].map((m) => (
-          <button key={m} type="button" className="list-item row--between" style={{ width: '100%', paddingRight: 10 }} onClick={() => m === '프로필 수정' && navigate('/volunteer/profile')}>
+          <button key={m} type="button" className="list-item row--between" style={{ width: '100%', paddingRight: 10 }} onClick={() => navigate(m === '프로필 수정' ? '/volunteer/profile' : m === '봉사시간 확인서 발급' ? '/volunteer/certificate' : '/volunteer/my')}>
             <span className="t-body t-medium">{m}</span>
             <Icon name="chev" size={20} color="var(--icon-muted)" />
           </button>

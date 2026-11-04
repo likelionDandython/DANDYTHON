@@ -94,7 +94,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!load()) return
     userApi
       .me()
-      .then((me) => update((p) => ({ ...p, name: me.name, profileCompleted: me.profileCompleted })))
+      .then((me) => update((p) => ({ ...p, name: me?.name ?? p.name, profileCompleted: me?.profileCompleted ?? p.profileCompleted })))
       .catch(() => undefined)
   }, [update])
 

@@ -76,7 +76,8 @@ function ProfileForm({ initial }: { initial: VolunteerProfileBody | null }) {
     )
     if (!res) return
     setProfileCompleted(true)
-    navigate('/volunteer/home', { replace: true })
+    // 처음 완성했을 때만 축하 화면을 보여줘요
+    navigate(initial ? '/volunteer/my' : '/volunteer/profile/done', { replace: true })
   }
 
   return (

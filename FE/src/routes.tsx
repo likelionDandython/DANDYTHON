@@ -2,6 +2,8 @@ import type { ReactElement } from 'react'
 import * as A from './screens/common/Account'
 import * as VM from './screens/volunteer/Main'
 import { VolunteerProfile } from './screens/volunteer/Profile'
+import { VolunteerCancel, VolunteerCertificate, VolunteerProfileDone } from './screens/volunteer/Extra'
+import { GuardianCancelRequest, GuardianVolunteerView } from './screens/guardian/Extra'
 import { VolunteerMemoDone, VolunteerMemoFallback, VolunteerMemoWrite } from './screens/volunteer/Memo'
 import * as GM from './screens/guardian/Main'
 import { designRoutes } from './design/routes'
@@ -46,6 +48,8 @@ export const sections: AppSection[] = [
       { group: '메인', code: 'G01', name: '홈', path: '/guardian/home', element: <GM.GuardianHome /> },
       { group: '메인', code: 'G02', name: '동행 신청 (나 / 가족)', path: '/guardian/apply', element: <GM.GuardianApply /> },
       ...designRoutes.guardian,
+      { group: '메인', code: 'G08-1', name: '봉사자 프로필 상세', path: '/guardian/volunteer', element: <GuardianVolunteerView /> },
+      { group: '메인', code: 'G11', name: '요청 취소 확인', path: '/guardian/cancel', element: <GuardianCancelRequest /> },
       { group: '메인', code: 'G03', name: '봉사자 확정', path: '/guardian/confirmed', element: <GM.GuardianConfirmed /> },
       { group: '메인', code: 'G04', name: '동행 현황', path: '/guardian/live', element: <GM.GuardianLive /> },
       { group: '메인', code: 'G05', name: '진료 결과 리포트', path: '/guardian/report', element: <GM.GuardianReport /> },
@@ -58,6 +62,7 @@ export const sections: AppSection[] = [
     title: '동행하기 모드',
     routes: [
       { group: '시작', code: 'V10', name: '봉사자 프로필', path: '/volunteer/profile', element: <VolunteerProfile /> },
+      { group: '시작', code: 'V11', name: '프로필 완성', path: '/volunteer/profile/done', element: <VolunteerProfileDone /> },
       { group: '메인', code: '03', name: '홈', path: '/volunteer/home', element: <VM.VolunteerHome /> },
       { group: '메인', code: '04', name: '동행 요청 목록', path: '/volunteer/requests', element: <VM.VolunteerRequests /> },
       { group: '메인', code: '05', name: '요청 상세', path: '/volunteer/request-detail', element: <VM.VolunteerRequestDetail /> },
@@ -67,6 +72,8 @@ export const sections: AppSection[] = [
       { group: '동행 마무리', code: '10', name: '진료 요약 완료', path: '/volunteer/memo/done', element: <VolunteerMemoDone /> },
       { group: '동행 마무리', code: '11', name: '요약 실패 · 메모 원문', path: '/volunteer/memo/fallback', element: <VolunteerMemoFallback /> },
       { group: '메인', code: '08', name: 'MY · 모드 전환', path: '/volunteer/my', element: <VM.VolunteerMyPage /> },
+      { group: '메인', code: '12', name: '신청 취소 (늦은 취소 경고)', path: '/volunteer/cancel', element: <VolunteerCancel /> },
+      { group: '동행 마무리', code: '13', name: '봉사 확인서', path: '/volunteer/certificate', element: <VolunteerCertificate /> },
     ],
   },
 ]
