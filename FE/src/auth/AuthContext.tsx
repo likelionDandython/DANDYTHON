@@ -1,3 +1,4 @@
+import { registerPush, unregisterPush } from '../push/push'
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { authStorageKey, UNAUTHORIZED_EVENT } from '../api/client'
 import { userApi } from '../api/services'
@@ -62,6 +63,12 @@ function load(): Session | null {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(load)
 
+  // 로그인(또는 새로고침으로 복구)되면 알림 권한을 받고 푸시 토큰을 등록해요
+  const loggedInUserId = session?.userId
+  useEffect(() => {
+    if (loggedInUserId) void registerPush()
+  }, [loggedInUserId])
+
   const update = useCallback((fn: (prev: Session) => Session) => {
     setSession((prev) => {
       if (!prev) return prev
@@ -79,6 +86,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return s
   }, [])
   const logout = useCallback(() => {
+    void unregisterPush() // 토큰이 지워지기 전에 이 기기의 푸시 토큰을 서버에서 삭제
     persist(null)
     setSession(null)
   }, [])

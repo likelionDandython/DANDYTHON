@@ -3,6 +3,7 @@
  * 서버가 아직 배포되지 않았다면 호출은 실패하고, 화면은 오류 안내를 보여줘요.
  */
 import { http } from '../api/client'
+import { isPushConfigured } from '../push/push'
 
 /** 알림 설정 스위치 5개 (기본값은 전부 켜짐) */
 export type NotificationSettings = {
@@ -95,10 +96,10 @@ export function notificationTime(iso: string, now = new Date()): string {
  * 휴대폰 알림(푸시) 상태. 시안의 세 가지 안내와 같아요.
  * - on: 알림이 켜져 있어요
  * - off: 브라우저에서 알림을 막아 뒀어요 (켜는 방법 안내)
- * - preparing: 푸시 연결(2단계)이 아직이라 앱 안 목록만 되는 상태. 지금은 항상 이 값이에요.
+ * - preparing: Firebase 설정값(.env)이 없어 앱 안 목록만 되는 상태
  * 2단계에서 FCM 토큰 등록이 붙으면 PUSH_CONNECTED 를 true 로 바꾸세요.
  */
-export const PUSH_CONNECTED = false
+export const PUSH_CONNECTED = isPushConfigured
 export type PushState = 'on' | 'off' | 'preparing'
 
 export function pushState(): PushState {
