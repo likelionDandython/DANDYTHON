@@ -136,7 +136,7 @@ function ApplicantCard({ a, requestId }: { a: ApplicationItem; requestId: number
         </div>
       </div>
       <div className="row" style={{ gap: 6 }}>
-        {v.verified && <Chip tone="green">신원 확인 완료</Chip>}
+        {v.verified && <Chip tone="green">재학 인증</Chip>}
         <Chip tone="gray">{`동행 ${v.visitCount}회`}</Chip>
       </div>
       {a.message && (
@@ -196,7 +196,7 @@ export function GuardianApplicantConfirm() {
             </h1>
             <p className="t-body" style={{ lineHeight: 1.6 }}>
               {a.volunteer.school} {a.volunteer.major} {a.volunteer.grade}학년
-              {a.volunteer.verified ? ' · 신원 확인 완료' : ''}
+              {a.volunteer.verified ? ' · 재학 인증' : ''}
             </p>
           </section>
 
