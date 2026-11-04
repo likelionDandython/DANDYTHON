@@ -1,0 +1,136 @@
+/* 디자인 개편에서 새로 생긴 공통 패턴. 색은 tokens.css 변수만 써요. */
+
+/* 화면 아래 고정 버튼 영역 */
+.cta-footer {
+  flex-shrink: 0;
+  padding: 12px 20px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: var(--bg-canvas);
+}
+.link-quiet {
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+/* 히어로 박스 */
+.hero {
+  border-radius: var(--radius-xl);
+  padding: 18px 20px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.hero--teal {
+  background: var(--brand-primary-soft);
+}
+.hero--coral {
+  background: var(--brand-accent-soft);
+}
+.hero--center {
+  align-items: center;
+  text-align: center;
+}
+.hero__title {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+/* 이름: 값 목록 */
+.info-list {
+  margin: 0;
+  display: grid;
+  grid-template-columns: 64px 1fr;
+  gap: 8px 12px;
+  font-size: 15px;
+}
+.info-list dt {
+  color: var(--text-secondary);
+}
+.info-list dd {
+  margin: 0;
+  font-weight: 500;
+}
+
+/* 신청자 카드 */
+.applicant {
+  background: var(--bg-surface);
+  border: 1px solid var(--line-default);
+  border-radius: var(--radius-lg);
+  padding: 16px 18px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.applicant__head {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+.bubble {
+  position: relative;
+  background: var(--bg-canvas);
+  border-radius: 16px;
+  padding: 12px 14px;
+  font-size: 15px;
+  line-height: 1.65;
+}
+.bubble__label {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--accent-ink);
+}
+
+/* 안내 목록 (아이콘 + 두 줄) */
+.point-list {
+  background: var(--bg-surface);
+  border: 1px solid var(--line-default);
+  border-radius: var(--radius-lg);
+  padding: 6px 18px;
+}
+.point-list__title {
+  margin: 12px 0 4px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+.point {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  padding: 14px 0;
+}
+.point + .point {
+  border-top: 1px solid var(--line-default);
+}
+.point__icon {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--brand-primary-soft);
+  color: var(--primary-ink);
+  display: grid;
+  place-items: center;
+}
+.point__title {
+  display: block;
+  font-size: 16px;
+  font-weight: 700;
+}
+.point__desc {
+  display: block;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+}

@@ -1,0 +1,21 @@
+/*
+ * 디자인 개편 화면 전용 토큰. 기존 tokens.css 는 건드리지 않고, 새로 필요한 변수만 여기서 정해요.
+ * 로고·캐릭터가 확정되면 이 파일의 값만 바꾸면 돼요.
+ */
+:root {
+  /* 연한 배경 위에 올리는 글자색 */
+  --primary-ink: #0e5f56; /* brand-primary-soft 위 */
+  --accent-ink: #8a3a2a; /* brand-accent-soft 위 */
+  --danger: #c2410c;
+  --bg-page: #efe5dc;
+
+  /* 서비스 캐릭터 색 (임시) */
+  --char-elder: #f68975;
+  --char-elder-dark: #b5543f;
+  --char-elder-cheek: #ffc9bb;
+  --char-vol: #127d73;
+  --char-vol-dark: #1b5354;
+  --char-vol-cheek: #3fa396;
+  --char-face: #4a2219;
+  --char-paper: #fff8f3;
+}
