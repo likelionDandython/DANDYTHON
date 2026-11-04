@@ -14,8 +14,8 @@ public record VolunteerProfileRequest(
         @Size(max = 50) String hometown,
         @Size(max = 300) String intro,
         @Size(max = 500) String photoUrl,
-        List<String> regions,
-        List<String> availableDays,
-        List<String> transports,
-        List<String> abilities
+        @Size(max = 10) List<@NotBlank @Size(max = 20) String> regions,
+        @Size(max = 7) List<@NotBlank @Size(max = 3) String> availableDays,
+        @Size(max = 5) List<@NotBlank @Size(max = 10) String> transports,
+        @Size(max = 10) List<@NotBlank @Size(max = 20) String> abilities
 ) {}
