@@ -102,9 +102,13 @@ export function Signup() {
   const [error, setError] = useState<string | null>(null)
 
   const next = () => {
-    if (!name.trim() || !phone.trim() || !email.trim() || password.length < 8) {
-      return setError('이름, 휴대폰, 이메일을 입력하고 비밀번호는 8자 이상으로 해주세요.')
+    if (!name.trim() || !phone.trim() || !email.trim()) {
+      return setError('이름, 휴대폰, 이메일을 입력해 주세요.')
     }
+    if (name.trim().length > 30) return setError('이름은 30자 이하로 입력해 주세요.')
+    if (!/^010-?\d{4}-?\d{4}$/.test(phone.trim())) return setError('휴대폰 번호는 010-1234-5678 형식으로 입력해 주세요.')
+    if (!/^\S+@\S+\.\S+$/.test(email.trim())) return setError('이메일 형식이 올바르지 않아요.')
+    if (password.length < 8 || password.length > 20) return setError('비밀번호는 8~20자로 해주세요.')
     patchDraft({ name: name.trim(), phone: phone.trim(), email: email.trim(), password, signedUp: false })
     navigate('/signup/agree')
   }
@@ -121,7 +125,7 @@ export function Signup() {
       <Field label="이름" value={name} onChange={(e) => setName(e.target.value)} />
       <Field label="휴대폰 번호" placeholder="010-1234-5678" inputMode="tel" value={phone} onChange={(e) => setPhone(e.target.value)} />
       <Field label="이메일" type="email" autoComplete="email" placeholder="로그인에 사용해요" value={email} onChange={(e) => setEmail(e.target.value)} />
-      <Field label="비밀번호 (8자 이상)" type="password" autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} />
+      <Field label="비밀번호 (8~20자)" type="password" autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} />
       <ErrorText>{error}</ErrorText>
       <Spacer />
       <Button onClick={next}>다음</Button>
@@ -351,6 +355,8 @@ export function SeniorAdd() {
     if (!name.trim() || !/^\d{4}$/.test(birthYear) || age < 1 || age > 120 || !address.trim()) {
       return setError('이름, 출생 연도(4자리), 사시는 곳을 입력해 주세요.')
     }
+    if (name.trim().length > 30) return setError('이름은 30자 이하로 입력해 주세요.')
+    if (phone.trim() && !/^01\d-?\d{3,4}-?\d{4}$/.test(phone.trim())) return setError('휴대폰 번호 형식이 올바르지 않아요. 없으면 비워 주세요.')
     const res = await run(() => profileApi.createSenior({ name: name.trim(), age, phone: phone.trim(), region: regionFromAddress(address) }))
     if (res) navigate('/guardian/home', { replace: true })
   }

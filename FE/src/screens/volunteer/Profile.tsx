@@ -58,6 +58,10 @@ function ProfileForm({ initial }: { initial: VolunteerProfileBody | null }) {
       return setError('기본 정보를 모두 채워 주세요. 다 채워야 동행을 신청할 수 있어요.')
     }
     if (a < 18) return setError('만 18세 이상부터 동행 봉사에 참여할 수 있어요.')
+    if (a > 100) return setError('나이를 다시 확인해 주세요.')
+    if (regions.length > 10) return setError('활동 지역은 최대 10곳까지 고를 수 있어요.')
+    if (g < 1 || g > 6) return setError('학년은 1~6 사이로 입력해 주세요.')
+    if ([school, major, hometown].some((v) => v.trim().length > 50)) return setError('대학교·학과·고향은 50자 이하로 입력해 주세요.')
     const res = await run(() =>
       profileApi.saveVolunteer({
         age: a,
