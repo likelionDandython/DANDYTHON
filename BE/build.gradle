@@ -35,4 +35,7 @@ dependencies {
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
+// 배포용: 실행 가능한 jar 하나만 만들기 (-plain.jar 생성 안 함)
+jar { enabled = false }
+
 tasks.named('test') { useJUnitPlatform() }
