@@ -1,3 +1,4 @@
+import { BellButton } from '../../components/common/BellButton'
 import { useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { profileApi, requestApi, visitApi } from '../../api/services'
@@ -72,6 +73,7 @@ export function GuardianHome() {
           {seniors.data?.[0] ? `${seniors.data[0].name} 님` : '나'}
         </span>
         <span className="row" style={{ gap: 4 }}>
+          <BellButton />
           <ModeSwitchButton current="REQUEST" />
         </span>
       </div>
