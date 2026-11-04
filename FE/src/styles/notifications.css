@@ -1,0 +1,181 @@
+/* 알림 화면 전용 스타일. 기존 CSS 는 건드리지 않고 이 파일에만 둬요. */
+.notif-group-title {
+  margin: 8px 4px 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+.notif-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.notif {
+  width: 100%;
+  box-sizing: border-box;
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  text-align: left;
+  padding: 14px 16px;
+  border-radius: 20px;
+  border: 1px solid var(--line-default);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  font: inherit;
+  cursor: pointer;
+}
+/* 읽은 알림은 면을 낮춰요 */
+.notif--read {
+  border-color: transparent;
+  background: #f6ece4;
+}
+.notif__icon {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.notif__icon--teal {
+  background: var(--brand-primary-soft);
+  color: var(--primary-ink);
+}
+.notif__icon--coral {
+  background: var(--brand-accent-soft);
+  color: var(--accent-ink);
+}
+.notif--read .notif__icon {
+  background: var(--bg-surface);
+  color: var(--text-secondary);
+}
+.notif__body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.notif__kind {
+  font-size: 13px;
+  font-weight: 700;
+}
+.notif__kind--teal {
+  color: var(--primary-ink);
+}
+.notif__kind--coral {
+  color: var(--accent-ink);
+}
+.notif--read .notif__kind {
+  color: var(--text-secondary);
+}
+.notif__msg {
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.5;
+}
+.notif--read .notif__msg {
+  font-weight: 500;
+  color: #3c4744;
+}
+.notif__time {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+.notif__dot {
+  width: 10px;
+  height: 10px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--brand-primary);
+}
+
+/* 벨 아이콘 + 빨간 점 */
+.bell {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  background: transparent;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+.bell__dot {
+  position: absolute;
+  top: 9px;
+  right: 9px;
+  min-width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--danger);
+  border: 2px solid var(--bg-surface);
+  box-sizing: content-box;
+}
+
+/* 설정 스위치: 켜짐/꺼짐 글자가 함께 보여요 */
+.nswitch {
+  width: 64px;
+  height: 36px;
+  flex-shrink: 0;
+  border: 0;
+  border-radius: 18px;
+  position: relative;
+  padding: 0;
+  background: #cfc4ba;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.nswitch--on {
+  background: var(--brand-primary);
+}
+.nswitch__text {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: #fff;
+  left: 9px;
+}
+.nswitch:not(.nswitch--on) .nswitch__text {
+  left: auto;
+  right: 9px;
+  color: #3c4744;
+}
+.nswitch__knob {
+  position: absolute;
+  top: 4px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #fff;
+  left: 4px;
+  transition: left 0.15s;
+}
+.nswitch--on .nswitch__knob {
+  left: 32px;
+}
+.nswitch:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.nrow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--line-default);
+}
+.nrow:last-child {
+  border-bottom: 0;
+}
