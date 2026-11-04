@@ -29,7 +29,7 @@ function infoRows(d: RequestDetail) {
   ] as const
 }
 
-/** 신청자 목록 + 수락 (보호자) — /guardian/applicants?requestId= */
+/** 신청자 목록 + 수락 (요청자) — /guardian/applicants?requestId= */
 export function GuardianApplicants() {
   const requestId = useRequestId()
   const detail = useApi(() => requestApi.detail(requestId), [requestId], !!requestId)
@@ -90,7 +90,7 @@ export function GuardianApplicants() {
             <div className="row" style={{ gap: 12 }}>
               <CharacterAvatar who="elder" size={56} />
               <h1 className="hero__title" style={{ fontSize: 22 }}>
-                {d.senior.name} 어르신과
+                {d.senior.name} 님과
                 <br />
                 함께 갈 분을 골라 주세요
               </h1>
@@ -146,7 +146,14 @@ function ApplicantCard({ a, requestId }: { a: ApplicationItem; requestId: number
         </p>
       )}
       <div className="col" style={{ gap: 8 }}>
-        <Button to={`/guardian/applicants/confirm?requestId=${requestId}&applicationId=${a.applicationId}`}>이분과 같이 가요</Button>
+        <div className="row" style={{ gap: 8 }}>
+          <Button variant="ghost" style={{ width: 120 }} to={`/guardian/volunteer?userId=${v.userId}&requestId=${requestId}&applicationId=${a.applicationId}`}>
+            프로필 보기
+          </Button>
+          <Button className="fill" to={`/guardian/applicants/confirm?requestId=${requestId}&applicationId=${a.applicationId}`}>
+            이분과 같이 가요
+          </Button>
+        </div>
       </div>
     </article>
   )

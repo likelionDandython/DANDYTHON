@@ -1,6 +1,13 @@
 // 병원동행 API 명세서 v0.1 (10/31) 기준 타입 정의
 
+/** 서버가 아직 쓰는 계정 역할. 계정 하나 + 모드 구조로 바뀌면서 FE 는 권한 판단에 쓰지 않아요 (BE 변경 전까지 가입 때만 보내요) */
 export type Role = 'GUARDIAN' | 'VOLUNTEER'
+/** 화면 모드: 동행 요청 모드 / 동행하기 모드. 한 계정이 둘 다 쓸 수 있어요 */
+export type Mode = 'REQUEST' | 'VOLUNTEER'
+/** 누구를 위한 요청인지: 나 / 가족 */
+export type TargetType = 'SELF' | 'FAMILY'
+/** 대구까지 이동 방법 (비용은 동행받는 분이 직접 내요) */
+export type TravelMode = 'BUS_TRAIN' | 'TAXI' | 'FAMILY_CAR'
 export type Gender = 'FEMALE' | 'MALE'
 export type GenderPref = 'ANY' | Gender
 export type MeetPlaceType = 'HOME' | 'STATION' | 'HOSPITAL'
@@ -57,15 +64,27 @@ export type VolunteerProfileBody = {
   grade: number
   hometown: string
   intro: string
+  /** 사진 업로드 없음: 빈 문자열 (프로필에는 캐릭터 고정) */
   photoUrl: string
+  /** 활동 지역 (예: '대구 북구', '칠곡군') */
+  regions: string[]
+  availableDays: Weekday[]
+  transports: Transport[]
+  /** Need 값 + SIGN_LANGUAGE */
+  abilities: string[]
 }
+export type Weekday = 'MON' | 'TUE' | 'WED' | 'THU' | 'FRI' | 'SAT' | 'SUN'
+export type Transport = 'PUBLIC' | 'CAR'
+export type ThanksMessage = { message: string; createdAt: string }
+/** GET /users/me */
+export type Me = { userId: number; email: string; name: string; phone: string; role: Role; profileCompleted: boolean }
 export type VolunteerProfile = Omit<VolunteerProfileBody, never> & {
   userId: number
   name: string
   verified: boolean
   visitCount: number
   totalMinutes: number
-  thanksMessages: string[]
+  thanksMessages: ThanksMessage[]
 }
 export type SeniorBody = { name: string; age: number; phone: string; region: string }
 export type Senior = { seniorId: number; name: string; age: number; region: string }
@@ -73,7 +92,12 @@ export type Hospital = { hospitalId: number; name: string; address: string }
 
 // ── 3. 동행 요청 ──
 export type RequestBody = {
-  seniorId: number
+  /** 나를 위한 요청이면 SELF, 가족이면 FAMILY (BE 추가 필요) */
+  targetType: TargetType
+  /** FAMILY 일 때만 */
+  seniorId: number | null
+  /** BE 추가 필요 */
+  travelMode: TravelMode
   date: string
   meetTime: string
   meetPlaceType: MeetPlaceType
@@ -110,6 +134,11 @@ export type MyRequestItem = {
 export type RequestDetail = {
   requestId: number
   status: RequestStatus
+  /** 요청을 등록한 사람. 내 요청에는 신청할 수 없어요 (BE 추가 필요) */
+  requesterId?: number
+  targetType?: TargetType
+  travelMode?: TravelMode
+  expectedHours?: number
   senior: { name: string; age: number; region: string; phone: string | null }
   date: string
   meetTime: string
@@ -157,6 +186,8 @@ export type MyApplication = {
   meetTime: string
   hospitalName: string
   requestStatus: RequestStatus
+  recognizedMinutes?: number | null
+  approvedMinutes?: number | null
 }
 export type CancelApplicationResult = { applicationId: number; status: ApplicationStatus; lateCancel: boolean }
 
@@ -165,7 +196,7 @@ export type Visit = {
   visitId: number
   requestId: number
   step: VisitStep
-  checklist: { step: VisitStep; label: string; done: boolean }[]
+  checklist: { step: VisitStep; label: string; done: boolean; completedAt?: string | null }[]
   startedAt: string | null
   endedAt: string | null
   consent: boolean

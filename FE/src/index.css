@@ -1,4 +1,5 @@
 @import './styles/tokens.css';
+@import './styles/design-tokens.css';
 
 *,
 *::before,
@@ -157,7 +158,7 @@ a {
   color: var(--brand-primary);
 }
 .t-accent {
-  color: var(--brand-accent);
+  color: var(--accent-ink);
 }
 .t-bold {
   font-weight: 700;
@@ -243,11 +244,11 @@ a {
 }
 .chip--green {
   background: var(--brand-primary-soft);
-  color: var(--brand-primary);
+  color: var(--primary-ink);
 }
 .chip--orange {
   background: var(--brand-accent-soft);
-  color: var(--brand-accent);
+  color: var(--accent-ink);
 }
 .chip--gray {
   background: var(--line-default);
@@ -325,7 +326,7 @@ a {
   padding: 14px 16px;
   border-radius: var(--radius-md);
   background: var(--brand-accent-soft);
-  color: var(--brand-accent);
+  color: var(--accent-ink);
   font-size: 14px;
   font-weight: 700;
 }

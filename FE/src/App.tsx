@@ -1,14 +1,14 @@
-import type { ReactElement } from 'react'
+import { useEffect, type ReactElement } from 'react'
 import { BrowserRouter, Link, Navigate, Route, Routes } from 'react-router-dom'
-import { allRoutes, sections, type ScreenRoute } from './routes'
-import { AuthProvider, homePath, ROLE_PATH, useAuth } from './auth/AuthContext'
+import { allRoutes, legacyRedirects, sections, type ScreenRoute } from './routes'
+import { AuthProvider, PATH_MODE, useAuth } from './auth/AuthContext'
 
 /** 개발용: 전체 화면 목록 */
 function Gallery() {
   return (
     <div className="gallery">
-      <h1>경북대구병원동행 · 화면 목록</h1>
-      <p className="t-sub">Figma 「병원동행 봉사자 앱」 파일의 화면을 React로 옮긴 프로토타입이에요. 버튼을 누르면 다음 화면으로 이어져요.</p>
+      <h1>같이가요 · 화면 목록</h1>
+      <p className="t-sub">계정 하나로 동행 요청 모드와 동행하기 모드를 오가는 구조예요. 버튼을 누르면 다음 화면으로 이어져요.</p>
       {sections.map((s) => {
         const groups = [...new Set(s.routes.map((r) => r.group))]
         return (
@@ -51,16 +51,27 @@ function ScreenShell({ route, children }: { route: ScreenRoute; children: ReactE
   )
 }
 
-/** 로그인한 사용자만(그리고 맞는 역할만) 볼 수 있는 화면 */
+/** 로그인해야 볼 수 있는 화면: 두 모드의 화면 */
 function isProtected(path: string) {
-  return /^\/(volunteer|guardian)\//.test(path) && !/\/(onboarding|login|signup)/.test(path)
+  return /^\/(volunteer|guardian|request)\//.test(path)
 }
 
+/**
+ * 역할이 아니라 모드로 들어가요.
+ * - 로그인 전이면 로그인으로
+ * - 그 모드의 첫 진입 약관을 아직 안 했으면 약관으로
+ * - 다른 모드 화면에 들어오면 지금 모드를 그쪽으로 바꿔요
+ */
 function Guard({ path, children }: { path: string; children: ReactElement }) {
-  const { session } = useAuth()
-  const section = path.split('/')[1] as 'volunteer' | 'guardian'
-  if (!session) return <Navigate to={`/${section}/login`} replace />
-  if (ROLE_PATH[session.role] !== section) return <Navigate to={homePath(session)} replace />
+  const { session, setMode } = useAuth()
+  const section = path.split('/')[1]
+  const mode = section === 'volunteer' ? PATH_MODE.volunteer : PATH_MODE.guardian
+  const entered = !!session?.modes.includes(mode)
+  useEffect(() => {
+    if (session && entered && session.mode !== mode) setMode(mode)
+  }, [session, entered, mode, setMode])
+  if (!session) return <Navigate to="/login" replace />
+  if (!entered) return <Navigate to={`/mode/terms?mode=${mode}`} replace />
   return children
 }
 
@@ -72,6 +83,9 @@ export default function App() {
         <Route path="/" element={<Gallery />} />
         {allRoutes.map((r) => (
           <Route key={r.path} path={r.path} element={<ScreenShell route={r}>{isProtected(r.path) ? <Guard path={r.path}>{r.element}</Guard> : r.element}</ScreenShell>} />
+        ))}
+        {Object.entries(legacyRedirects).map(([from, to]) => (
+          <Route key={from} path={from} element={<Navigate to={to} replace />} />
         ))}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
