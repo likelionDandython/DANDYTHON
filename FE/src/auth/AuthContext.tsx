@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { authStorageKey, UNAUTHORIZED_EVENT } from '../api/client'
+import { userApi } from '../api/services'
 import type { LoginResult, Mode } from '../api/types'
 
 /**
@@ -87,6 +88,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     (mode: Mode) => update((p) => ({ ...p, mode, modes: p.modes.includes(mode) ? p.modes : [...p.modes, mode] })),
     [update],
   )
+
+  // 새로고침하면 GET /users/me 로 이름·프로필 완성 여부를 다시 맞춰요 (처음 한 번)
+  useEffect(() => {
+    if (!load()) return
+    userApi
+      .me()
+      .then((me) => update((p) => ({ ...p, name: me.name, profileCompleted: me.profileCompleted })))
+      .catch(() => undefined)
+  }, [update])
 
   // 토큰이 만료되면(401) 자동 로그아웃
   useEffect(() => {

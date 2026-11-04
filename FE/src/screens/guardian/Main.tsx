@@ -13,7 +13,7 @@ import {
 import type { GenderPref, MeetPlaceType, MyRequestItem, Need, TargetType, TravelMode } from '../../api/types'
 import { Button } from '../../components/common/Button'
 import { Chip, FilterChips, ToggleChipGroup } from '../../components/common/Chip'
-import { ErrorText, Field, SelectField, Switch } from '../../components/common/Form'
+import { ErrorText, Field, SelectField } from '../../components/common/Form'
 import { Icon, type IconName } from '../../components/common/Icon'
 import { Avatar, Screen, Spacer, TopBar } from '../../components/common/Layout'
 import { GUARDIAN_TABS, TabBar } from '../../components/common/TabBar'
@@ -21,7 +21,6 @@ import { ModeSwitchButton, ModeSwitchCard } from '../../components/common/ModeSw
 import { useAuth } from '../../auth/AuthContext'
 import { useAction, useApi } from '../../hooks/useApi'
 import { formatDate, formatDateTime, hhmm, todayString } from '../../lib/format'
-import { MapPlaceholder } from '../volunteer/Main'
 
 const tabs = <TabBar tabs={GUARDIAN_TABS} />
 
@@ -77,7 +76,6 @@ export function GuardianHome() {
         </span>
         <span className="row" style={{ gap: 4 }}>
           <ModeSwitchButton current="REQUEST" />
-          <Icon name="bell" size={26} />
         </span>
       </div>
 
@@ -330,7 +328,7 @@ export function GuardianConfirmed() {
             )}
             {p?.thanksMessages[0] && (
               <div className="col" style={{ gap: 6, padding: '14px 16px', borderRadius: 14, background: 'var(--bg-canvas)' }}>
-                <span className="t-sub" style={{ color: 'var(--text-primary)' }}>“{p.thanksMessages[0]}”</span>
+                <span className="t-sub" style={{ color: 'var(--text-primary)' }}>“{p.thanksMessages[0].message}”</span>
                 <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-secondary)' }}>다른 요청자 후기</span>
               </div>
             )}
@@ -350,7 +348,7 @@ export function GuardianConfirmed() {
   )
 }
 
-/** G04 실시간 동행 현황 */
+/** G04 동행 현황 (지도 없이 체크리스트 단계로) */
 export function GuardianLive() {
   const target = useTargetRequestId()
   const { detail, visit, loading, error } = useVisitByRequest(target.requestId || undefined)
@@ -362,16 +360,8 @@ export function GuardianLive() {
 
   return (
     <Screen bodyStyle={{ padding: 0, gap: 0 }}>
-      <div style={{ position: 'relative' }}>
-        <MapPlaceholder height={250} dashed={false} />
-        <Link
-          to="/guardian/home"
-          className="row"
-          style={{ position: 'absolute', top: 16, left: 16, gap: 8, padding: '8px 14px 8px 12px', borderRadius: 999, background: '#fff', fontSize: 14, fontWeight: 700 }}
-        >
-          <Icon name="back" size={20} />
-          {d ? `${d.senior.name}님 동행 현황` : '동행 현황'}
-        </Link>
+      <div style={{ padding: '0 24px' }}>
+        <TopBar title={d ? `${d.senior.name} 님 동행 현황` : '동행 현황'} />
       </div>
       <div className="col" style={{ flex: 1, gap: 14, padding: '20px 24px 24px' }}>
         <Status loading={target.loading || loading} error={target.error ?? error} />
@@ -393,8 +383,8 @@ export function GuardianLive() {
                     <Icon name="check" size={13} color="#fff" strokeWidth={3} />
                   </span>
                   <div className="col fill" style={{ gap: 1 }}>
-                    {s.step === 'MEET' && v.startedAt && (
-                      <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)' }}>{hhmm(v.startedAt)}</span>
+                    {(s.completedAt ?? (s.step === 'MEET' ? v.startedAt : null)) && (
+                      <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)' }}>{hhmm((s.completedAt ?? v.startedAt)!)}</span>
                     )}
                     <span className="t-body t-medium">{s.label} 완료</span>
                   </div>
@@ -552,18 +542,11 @@ export function GuardianRecords() {
   )
 }
 
-/** G07 MY · 가족·알림 설정 */
+/** G07 MY · 모드 전환 · 동행받는 분 */
 export function GuardianMy() {
   const navigate = useNavigate()
   const { session, logout } = useAuth()
   const seniors = useApi(() => profileApi.mySeniors(), [])
-  const notis: [string, boolean][] = [
-    ['집에서 출발할 때', true],
-    ['병원에 도착했을 때', true],
-    ['진료가 끝났을 때', true],
-    ['집에 도착했을 때', true],
-    ['대기·진료 중 소식', false],
-  ]
   return (
     <Screen footer={tabs}>
       <h1 className="t-h1">MY</h1>
@@ -595,15 +578,6 @@ export function GuardianMy() {
               </span>
             </div>
             <Icon name="chev" size={20} color="var(--icon-muted)" />
-          </div>
-        ))}
-      </div>
-      <span style={{ fontSize: 16, fontWeight: 700 }}>알림 받을 순간</span>
-      <div className="card card--list">
-        {notis.map(([l, on]) => (
-          <div key={l} className="list-item row--between" style={{ padding: '12px 14px' }}>
-            <span className="t-body t-medium">{l}</span>
-            <Switch defaultOn={on} label={l} />
           </div>
         ))}
       </div>

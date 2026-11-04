@@ -47,7 +47,6 @@ export function VolunteerHome() {
         </div>
         <span className="row" style={{ gap: 4 }}>
           <ModeSwitchButton current="VOLUNTEER" />
-          <Icon name="bell" size={26} />
         </span>
       </div>
 
@@ -258,31 +257,6 @@ export function VolunteerAccepted() {
   )
 }
 
-export function MapPlaceholder({ height, dashed = true }: { height: number; dashed?: boolean }) {
-  // 실제 지도 SDK(카카오맵 등)로 교체할 자리표시
-  return (
-    <svg width="100%" height={height} viewBox={`0 0 390 ${height}`} preserveAspectRatio="xMidYMid slice" style={{ display: 'block', background: '#dee8e0' }}>
-      <path d={`M0 ${height * 0.23} L390 ${height * 0.13} M0 ${height * 0.7} L390 ${height * 0.83} M120 0 L150 ${height} M290 0 L260 ${height}`} stroke="#fff" strokeWidth="10" />
-      <path
-        d={`M70 ${height * 0.8} C140 ${height * 0.77} 150 ${height * 0.53} 210 ${height * 0.47} S300 ${height * 0.3} 320 ${height * 0.2}`}
-        stroke="#14735E"
-        strokeWidth="5"
-        strokeLinecap="round"
-        strokeDasharray={dashed ? '2 10' : undefined}
-        fill="none"
-      />
-      <circle cx="70" cy={height * 0.8} r="9" fill="#fff" stroke="#14735E" strokeWidth="4" />
-      {dashed ? (
-        <>
-          <circle cx="320" cy={height * 0.2} r="12" fill="#E8963A" />
-          <circle cx="210" cy={height * 0.47} r="14" fill="#14735E" stroke="#fff" strokeWidth="4" />
-        </>
-      ) : (
-        <circle cx="320" cy={height * 0.2} r="15" fill="#14735E" stroke="#fff" strokeWidth="4" />
-      )}
-    </svg>
-  )
-}
 
 /** 07 진행 현황 · 체크인/단계/체크아웃 */
 export function VolunteerProgress() {
@@ -323,10 +297,10 @@ export function VolunteerProgress() {
 
   return (
     <Screen bodyStyle={{ padding: 0, gap: 0 }}>
-      <div style={{ position: 'relative' }}>
-        <MapPlaceholder height={300} />
+      <div style={{ padding: '0 24px' }}>
+        <TopBar title="동행 진행" />
       </div>
-      <div className="col" style={{ flex: 1, gap: 16, padding: '24px 24px 24px', marginTop: -24, borderRadius: '24px 24px 0 0', background: 'var(--bg-canvas)' }}>
+      <div className="col" style={{ flex: 1, gap: 16, padding: '8px 24px 24px', background: 'var(--bg-canvas)' }}>
         {!visitId && !apps.loading && <p className="t-body">진행할 동행이 아직 없어요.</p>}
         <Status loading={visit.loading || apps.loading} error={visit.error ?? apps.error} />
         {v && (
@@ -363,6 +337,7 @@ export function VolunteerProgress() {
                         {s.label}
                       </span>
                       {s.step === 'MEET' && v.startedAt && <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{hhmm(v.startedAt)} 체크인</span>}
+                      {s.step !== 'MEET' && s.completedAt && <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{hhmm(s.completedAt)}</span>}
                     </div>
                   </li>
                 )
@@ -405,7 +380,8 @@ export function VolunteerMyPage() {
   const history = (apps.data ?? []).map((a) => {
     const label = a.status === 'ACCEPTED' ? REQUEST_STATUS_LABEL[a.requestStatus] : APPLICATION_STATUS_LABEL[a.status]
     const tone: 'green' | 'gray' = a.status === 'ACCEPTED' && a.requestStatus !== 'CANCELED' ? 'green' : 'gray'
-    return { id: a.applicationId, date: formatDate(a.date), hospital: a.hospitalName, label, tone }
+    const minutes = a.approvedMinutes ?? a.recognizedMinutes
+    return { id: a.applicationId, date: formatDate(a.date) + (minutes ? ` · ${minutesToText(minutes)} 인정` : ''), hospital: a.hospitalName, label, tone }
   })
 
   return (
@@ -457,8 +433,8 @@ export function VolunteerMyPage() {
         ))}
       </div>
       <div className="card card--list">
-        {['봉사시간 확인서 발급', '알림 설정', '자주 묻는 질문'].map((m) => (
-          <button key={m} type="button" className="list-item row--between" style={{ width: '100%', paddingRight: 10 }}>
+        {['프로필 수정', '봉사시간 확인서 발급', '자주 묻는 질문'].map((m) => (
+          <button key={m} type="button" className="list-item row--between" style={{ width: '100%', paddingRight: 10 }} onClick={() => m === '프로필 수정' && navigate('/volunteer/profile')}>
             <span className="t-body t-medium">{m}</span>
             <Icon name="chev" size={20} color="var(--icon-muted)" />
           </button>

@@ -11,6 +11,7 @@ import type {
   Hospital,
   LoginBody,
   LoginResult,
+  Me,
   Mode,
   ConsentItem,
   MyApplication,
@@ -37,6 +38,8 @@ export const authApi = {
 
 /** 계정 하나 + 모드 (BE 추가 필요: PATCH /users/me, POST /users/me/consents) */
 export const userApi = {
+  /** 새로고침 때 이름·프로필 완성 여부 복구 */
+  me: () => http.get<Me>('/users/me'),
   /** 마지막에 쓴 모드 저장 */
   setMode: (mode: Mode) => http.patch<{ lastMode: Mode }>('/users/me', { lastMode: mode }),
   /** 모드에 처음 들어갈 때 받은 동의 저장 */
@@ -45,6 +48,7 @@ export const userApi = {
 
 /** 2. 프로필 */
 export const profileApi = {
+  myVolunteer: () => http.get<VolunteerProfileBody>('/volunteers/me'),
   saveVolunteer: (body: VolunteerProfileBody) => http.put<{ userId: number; profileCompleted: boolean }>('/volunteers/me', body),
   getVolunteer: (userId: number) => http.get<VolunteerProfile>(`/volunteers/${userId}`),
   createSenior: (body: SeniorBody) => http.post<{ seniorId: number }>('/seniors', body),
