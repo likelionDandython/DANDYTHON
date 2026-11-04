@@ -20,6 +20,7 @@ public enum ErrorCode {
     LOGIN_FAILED(HttpStatus.UNAUTHORIZED, "이메일 또는 비밀번호가 올바르지 않습니다"),
     REQUIRED_CONSENT_MISSING(HttpStatus.BAD_REQUEST, "필수 동의 항목이 누락되었습니다"),
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다"),
+    VOLUNTEER_NOT_FOUND(HttpStatus.NOT_FOUND, "봉사자 프로필을 찾을 수 없습니다"),
     SENIOR_NOT_FOUND(HttpStatus.NOT_FOUND, "어르신 정보를 찾을 수 없습니다"),
     HOSPITAL_NOT_FOUND(HttpStatus.NOT_FOUND, "병원을 찾을 수 없습니다"),
     PROFILE_INCOMPLETE(HttpStatus.FORBIDDEN, "프로필을 먼저 완성해주세요"),
@@ -32,7 +33,8 @@ public enum ErrorCode {
 
     // C: 동행·요약
     VISIT_NOT_FOUND(HttpStatus.NOT_FOUND, "동행 기록을 찾을 수 없습니다"),
-    CONSENT_REQUIRED(HttpStatus.BAD_REQUEST, "어르신 동의가 필요합니다");
+    CONSENT_REQUIRED(HttpStatus.BAD_REQUEST, "어르신 동의가 필요합니다"),
+    SUMMARY_NOT_FOUND(HttpStatus.NOT_FOUND, "아직 진료 요약이 없습니다");
 
     private final HttpStatus status;
     private final String message;
