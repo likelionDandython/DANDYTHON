@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { visitApi } from '../../api/services'
 import { Icon, type IconName } from '../../components/common/Icon'
 import { Screen, TopBar } from '../../components/common/Layout'
-import { EmptyState, Status } from '../../components/common/States'
+import { Status } from '../../components/common/States'
 import { ErrorText } from '../../components/common/Form'
 import {
   DEFAULT_SETTINGS,
@@ -11,6 +11,7 @@ import {
   dayGroup,
   notificationApi,
   notificationTime,
+  pushState,
   typeMeta,
   type NotificationItem,
   type NotificationSettings,
@@ -86,7 +87,13 @@ export function NotificationList() {
       <Status loading={list.loading} error={list.error} onRetry={list.reload} />
       <ErrorText>{action.error}</ErrorText>
       {list.data && items.length === 0 && (
-        <EmptyState title="아직 알림이 없어요" desc="동행 소식이 생기면 여기에 모아 보여 드려요." />
+        <div className="notif-empty">
+          <span className="notif-empty__icon">
+            <Icon name="bell" size={34} />
+          </span>
+          <span className="t-h2">새 알림이 없어요</span>
+          <span className="t-sub">동행 소식이 생기면 여기에 모아 보여드려요.</span>
+        </div>
       )}
       {list.data && items.length > 0 && (
         <>
@@ -146,6 +153,33 @@ function NSwitch({ on, onChange, labelledBy, disabled }: { on: boolean; onChange
   )
 }
 
+const PUSH_TEXT = {
+  on: { title: '휴대폰 알림이 켜져 있어요', desc: '동행 소식이 생기면 앱을 열지 않아도 알려 드려요.' },
+  off: {
+    title: '휴대폰 알림이 꺼져 있어요',
+    desc: '브라우저에서 알림을 허용하면 앱을 열지 않아도 알려 드려요. 지금은 앱 안 알림 목록에서만 볼 수 있어요.',
+  },
+  preparing: { title: '동행 소식을 알려 드려요', desc: '받고 싶은 소식만 골라 둘 수 있어요. 휴대폰 알림은 준비 중이라, 지금은 앱 안 알림 목록에서 볼 수 있어요.' },
+} as const
+
+function PushBanner() {
+  const state = pushState()
+  const t = PUSH_TEXT[state]
+  return (
+    <section className={`npush npush--${state}`} aria-label="휴대폰 알림 상태">
+      <div className="npush__head">
+        <span className="npush__icon">
+          <Icon name="bell" size={20} />
+        </span>
+        <div className="col" style={{ gap: 4 }}>
+          <span style={{ fontSize: 16, fontWeight: 700 }}>{t.title}</span>
+          <span className="t-sub">{t.desc}</span>
+        </div>
+      </div>
+    </section>
+  )
+}
+
 /** 알림 설정 — /guardian/notifications/settings (MY 에서 들어와요) */
 export function NotificationSettingsScreen() {
   const settings = useApi(() => notificationApi.getSettings(), [])
@@ -171,21 +205,7 @@ export function NotificationSettingsScreen() {
       <Status loading={settings.loading} error={settings.error} onRetry={settings.reload} />
       {!settings.loading && !settings.error && (
         <>
-          <section
-            className="row"
-            style={{ gap: 12, alignItems: 'flex-start', background: 'var(--brand-primary-soft)', borderRadius: 22, padding: '16px 18px' }}
-          >
-            <span
-              className="row"
-              style={{ width: 36, height: 36, flexShrink: 0, borderRadius: '50%', background: '#fff', color: 'var(--brand-primary)', justifyContent: 'center' }}
-            >
-              <Icon name="bell" size={20} />
-            </span>
-            <div className="col" style={{ gap: 4 }}>
-              <span style={{ fontSize: 16, fontWeight: 700 }}>동행 소식을 알려 드려요</span>
-              <span className="t-sub">받고 싶은 소식만 골라 둘 수 있어요. 알림은 앱 안 목록에서도 다시 볼 수 있어요.</span>
-            </div>
-          </section>
+          <PushBanner />
           <section className="card" style={{ padding: '6px 18px' }} aria-labelledby="ns-title">
             <h2 id="ns-title" className="t-label t-bold" style={{ margin: '12px 0 2px' }}>
               이런 소식을 받을게요

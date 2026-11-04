@@ -90,3 +90,19 @@ export function notificationTime(iso: string, now = new Date()): string {
   if (g === '어제') return `어제 ${clock}`
   return `${d.getMonth() + 1}월 ${d.getDate()}일 ${clock}`
 }
+
+/**
+ * 휴대폰 알림(푸시) 상태. 시안의 세 가지 안내와 같아요.
+ * - on: 알림이 켜져 있어요
+ * - off: 브라우저에서 알림을 막아 뒀어요 (켜는 방법 안내)
+ * - preparing: 푸시 연결(2단계)이 아직이라 앱 안 목록만 되는 상태. 지금은 항상 이 값이에요.
+ * 2단계에서 FCM 토큰 등록이 붙으면 PUSH_CONNECTED 를 true 로 바꾸세요.
+ */
+export const PUSH_CONNECTED = false
+export type PushState = 'on' | 'off' | 'preparing'
+
+export function pushState(): PushState {
+  if (!PUSH_CONNECTED) return 'preparing'
+  if (typeof Notification === 'undefined') return 'off'
+  return Notification.permission === 'granted' ? 'on' : 'off'
+}

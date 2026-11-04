@@ -129,7 +129,7 @@
   border-radius: 18px;
   position: relative;
   padding: 0;
-  background: #cfc4ba;
+  background: #6b716e;
   cursor: pointer;
   transition: background 0.15s;
 }
@@ -150,7 +150,6 @@
 .nswitch:not(.nswitch--on) .nswitch__text {
   left: auto;
   right: 9px;
-  color: #3c4744;
 }
 .nswitch__knob {
   position: absolute;
@@ -178,4 +177,61 @@
 }
 .nrow:last-child {
   border-bottom: 0;
+}
+
+/* 빈 화면: 벨 아이콘 원 (시안 States2) */
+.notif-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 64px 32px 0;
+  text-align: center;
+}
+.notif-empty__icon {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: var(--brand-primary-soft);
+  color: var(--brand-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+/* 설정 맨 위 안내: 켜짐(청록) / 꺼짐(코랄) */
+.npush {
+  border-radius: 22px;
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.npush--on,
+.npush--preparing {
+  background: var(--brand-primary-soft);
+}
+.npush--off {
+  background: var(--brand-accent-soft);
+}
+.npush__head {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+.npush__icon {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.npush--on .npush__icon,
+.npush--preparing .npush__icon {
+  color: var(--brand-primary);
+}
+.npush--off .npush__icon {
+  color: var(--accent-ink);
 }
