@@ -26,6 +26,9 @@ import { formatDate, formatDateTime, hhmm, todayString } from '../../lib/format'
 
 const tabs = <TabBar tabs={GUARDIAN_TABS} />
 
+/** REQ-01 역·터미널 선택 시 자주 쓰는 대구 주요 역·터미널 퀵 버튼 */
+const STATION_QUICK_PLACES = ['동대구역', '동대구터미널', '북부정류장', '서부정류장'] as const
+
 
 /** 지금 동행 중인 요청 → 없으면 가장 가까운 확정 요청 */
 function pickActive(list: MyRequestItem[] | null) {
@@ -266,6 +269,29 @@ export function GuardianApply() {
           value={meetPlaceType}
           onChange={(v) => setMeetPlaceType(v as MeetPlaceType)}
         />
+        {meetPlaceType === 'STATION' && (
+          <div className="field" style={{ gap: 6 }}>
+            <span className="t-caption t-bold" style={{ color: 'var(--text-secondary)' }}>
+              대구 주요 역·터미널 빠른 선택
+            </span>
+            <div className="chip-group">
+              {STATION_QUICK_PLACES.map((place) => {
+                const active = meetAddress === place
+                return (
+                  <button
+                    key={place}
+                    type="button"
+                    aria-pressed={active}
+                    className={`filter-chip ${active ? 'filter-chip--on' : ''}`}
+                    onClick={() => setMeetAddress(place)}
+                  >
+                    {place}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        )}
         <ChoiceChips
           label="대구까지 이동 방법"
           options={(Object.keys(TRAVEL_MODE_LABEL) as TravelMode[]).map((k) => ({ value: k, label: TRAVEL_MODE_LABEL[k] }))}
@@ -273,7 +299,12 @@ export function GuardianApply() {
           onChange={(v) => setTravelMode(v as TravelMode)}
           hint="차비·진료비·약값은 동행받는 분이 직접 내요. 봉사자는 돈을 대신 내지 않아요."
         />
-        <Field label="만나는 주소" placeholder="경북 의성군 의성읍 ○○로 12" value={meetAddress} onChange={(e) => setMeetAddress(e.target.value)} />
+        <Field
+          label={meetPlaceType === 'STATION' ? '만나는 역·터미널 (상세 위치)' : '만나는 주소'}
+          placeholder={meetPlaceType === 'STATION' ? '예: 동대구터미널 1층 대합실 앞' : '경북 의성군 의성읍 ○○로 12'}
+          value={meetAddress}
+          onChange={(e) => setMeetAddress(e.target.value)}
+        />
       </section>
 
       <section className="card" style={{ gap: 16 }}>
@@ -281,6 +312,9 @@ export function GuardianApply() {
           어떤 도움이 필요한가요
         </h2>
         <ToggleChipGroup label="필요한 도움" options={needLabels} onChange={(labels) => setNeeds(NEEDS.filter((n) => labels.includes(NEED_LABEL[n])))} />
+        <p className="t-caption" style={{ margin: '-4px 0 0', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+          ※ 자립 보행이나 휠체어 탑승이 가능한 분을 대상으로 1:1 동행해요. 혼자 거동이 어려운 중증 와상·낙상 고위험군은 장기요양 요양보호사 제도를 이용해 주세요.
+        </p>
         <label className="field">
           <span className="t-label">봉사자에게 전할 말</span>
           <textarea className="textarea" rows={3} placeholder="귀가 어두우셔서 크게 천천히 말씀해 주세요." value={notes} onChange={(e) => setNotes(e.target.value)} />
