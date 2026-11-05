@@ -30,6 +30,7 @@ public enum ErrorCode {
     APPLICATION_NOT_FOUND(HttpStatus.NOT_FOUND, "신청을 찾을 수 없습니다"),
     ALREADY_APPLIED(HttpStatus.CONFLICT, "이미 신청한 요청입니다"),
     SCHEDULE_CONFLICT(HttpStatus.CONFLICT, "같은 시간대에 확정된 동행이 있습니다"),
+    OWN_REQUEST(HttpStatus.FORBIDDEN, "내가 등록한 요청에는 신청할 수 없습니다"),
 
     // C: 동행·요약
     VISIT_NOT_FOUND(HttpStatus.NOT_FOUND, "동행 기록을 찾을 수 없습니다"),
