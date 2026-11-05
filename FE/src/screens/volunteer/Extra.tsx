@@ -9,7 +9,7 @@ import { Screen, Spacer, TopBar } from '../../components/common/Layout'
 import { EmptyState, Status } from '../../components/common/States'
 import { useAuth } from '../../auth/AuthContext'
 import { useAction, useApi } from '../../hooks/useApi'
-import { dDay, formatDate, hhmm, minutesToText } from '../../lib/format'
+import { dDay, formatDate, minutesToText } from '../../lib/format'
 
 /** 동행일까지 남은 날 (오늘 0) */
 function daysUntil(date: string) {
@@ -129,42 +129,57 @@ export function VolunteerCertificate() {
   }
 
   const c = cert.data
+  const fullDate = (iso: string) => {
+    const [y, m, d] = iso.slice(0, 10).split('-').map(Number)
+    const wd = '일월화수목금토'[new Date(y, m - 1, d).getDay()]
+    return `${y}년 ${m}월 ${d}일 (${wd})`
+  }
+  const ampm = (iso: string) => {
+    const [h, mm] = iso.slice(11, 16).split(':').map(Number)
+    return `${h < 12 ? '오전' : '오후'} ${h % 12 || 12}:${String(mm).padStart(2, '0')}`
+  }
   const rows: [string, string][] = c
     ? [
-        ['봉사자', `${c.volunteerName} · ${c.school}`],
-        ['날짜', formatDate(c.date)],
-        ['병원', c.hospitalName],
-        ['동행 시간', `${hhmm(c.startedAt)} ~ ${hhmm(c.endedAt)}`],
+        ['이름', c.volunteerName],
+        ['학교', c.school],
+        ['활동일', fullDate(c.date)],
+        ['활동 장소', c.hospitalName],
+        ['활동 시간', `${ampm(c.startedAt)} ~ ${ampm(c.endedAt)}`],
         ['인정 시간', minutesToText(c.approvedMinutes)],
-        ['승인일', formatDate(c.approvedAt.slice(0, 10))],
+        ['승인일', fullDate(c.approvedAt).replace(/ \(.\)$/, '')],
       ]
     : []
 
   return (
-    <Screen bodyStyle={{ gap: 14 }}>
+    <Screen cta={c ? <Button onClick={() => window.print()}>확인서 저장하기</Button> : undefined}>
       <TopBar title="봉사 확인서" />
       <Status loading={cert.loading} error={cert.error} onRetry={cert.reload} />
       {c && (
         <>
-          <section className="card certificate" style={{ gap: 14, padding: 20 }}>
-            <div className="row row--between">
-              <span className="t-h2">동행 봉사 확인서</span>
-              <Character who="volunteer" size={48} />
+          <section aria-label="봉사활동 확인서" className="col certificate" style={{ gap: 6, padding: '24px 22px 22px', borderRadius: 20, background: '#fff', border: '1.5px solid var(--line-default)' }}>
+            <div className="col" style={{ alignItems: 'center', gap: 8, paddingBottom: 14, borderBottom: '2px solid var(--text-primary)' }}>
+              <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--brand-primary)' }}>같이가요</span>
+              <h2 style={{ margin: 0, fontSize: 26, fontWeight: 700, letterSpacing: '0.08em' }}>봉사활동 확인서</h2>
             </div>
-            {rows.map(([k, v]) => (
-              <div key={k} className="row row--between" style={{ gap: 12 }}>
-                <span className="t-sub">{k}</span>
-                <span className="t-body t-bold" style={{ textAlign: 'right' }}>
-                  {v}
-                </span>
-              </div>
-            ))}
-            <p className="t-caption" style={{ margin: 0 }}>
-              위 봉사자는 같이가요를 통해 병원 동행 봉사를 마쳤으며, 요청한 분이 실제 동행 시간을 확인하고 승인했어요. 공식 봉사시간(1365) 등록은 학교·자원봉사센터를 통해 진행해 주세요.
+            <div>
+              {rows.map(([k, v], i) => (
+                <div key={k} className="row" style={{ gap: 12, padding: '13px 0', alignItems: 'flex-start', borderBottom: i < rows.length - 1 ? '1px dashed var(--line-default)' : 'none' }}>
+                  <span style={{ width: 84, flexShrink: 0, fontSize: 14, color: 'var(--text-secondary)' }}>{k}</span>
+                  <span style={{ flex: 1, fontSize: k === '인정 시간' ? 18 : 16, fontWeight: k === '인정 시간' ? 700 : 500, lineHeight: 1.5 }}>{v}</span>
+                </div>
+              ))}
+            </div>
+            <p style={{ margin: '10px 0 0', fontSize: 14, lineHeight: 1.7, textAlign: 'center', color: 'var(--chip-gray-ink)' }}>
+              위 사람은 같이가요를 통해
+              <br />
+              병원 동행 봉사를 마쳤으며,
+              <br />
+              요청한 분이 봉사시간을 승인했음을 확인합니다.
             </p>
           </section>
-          <Spacer />
-          <Button onClick={() => window.print()}>PDF로 저장하기</Button>
+          <p className="t-caption" style={{ fontSize: 14, padding: '0 4px' }}>
+            확인서는 이 화면을 저장해서 학교에 내면 돼요. 공식 봉사시간(1365) 등록은 학교·자원봉사센터를 통해 진행해 주세요.
+          </p>
         </>
       )}
     </Screen>

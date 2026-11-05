@@ -16,18 +16,20 @@ type ScreenProps = {
   children: ReactNode
   /** 화면 아래에 붙는 탭바 등 */
   footer?: ReactNode
+  /** 화면 아래에 고정되는 버튼 묶음 (시안의 footer) */
+  cta?: ReactNode
   variant?: 'default' | 'elder'
   bodyStyle?: CSSProperties
 }
 
 /** 390×844 모바일 프레임. 모바일 폭에서는 화면 전체를 채워요. */
-export function Screen({ children, footer, variant = 'default', bodyStyle }: ScreenProps) {
+export function Screen({ children, footer, cta, variant = 'default', bodyStyle }: ScreenProps) {
   return (
     <div className={`screen ${variant === 'elder' ? 'elder' : ''}`}>
-      <StatusBar />
-      <main className="screen__body" style={bodyStyle}>
+      <main className="screen__body" style={{ paddingTop: 8, ...bodyStyle }}>
         {children}
       </main>
+      {cta && <div className="footer-cta">{cta}</div>}
       {footer}
     </div>
   )

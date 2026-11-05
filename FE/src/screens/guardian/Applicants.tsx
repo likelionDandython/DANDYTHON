@@ -3,8 +3,7 @@ import { applicationApi, requestApi } from '../../api/services'
 import { MEET_PLACE_LABEL, NEED_LABEL } from '../../api/labels'
 import type { ApplicationItem, RequestDetail } from '../../api/types'
 import { Button } from '../../components/common/Button'
-import { Chip } from '../../components/common/Chip'
-import { CharacterAvatar, CharacterPair } from '../../components/common/Character'
+import { Character, CharacterAvatar, CharacterPair } from '../../components/common/Character'
 import { ErrorText } from '../../components/common/Form'
 import { Icon } from '../../components/common/Icon'
 import { Screen, TopBar } from '../../components/common/Layout'
@@ -48,19 +47,6 @@ export function GuardianApplicants() {
   return (
     <Screen footer={list.length === 0 ? footer : undefined}>
       <TopBar title="신청자 보기" />
-      {d && (
-        <section className="card" aria-label="동행 요청 내용" style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-          <div className="col" style={{ gap: 4 }}>
-            <span style={{ fontSize: 17, fontWeight: 700 }}>{formatDateTime(d.date, d.meetTime)}</span>
-            <span className="t-sub">
-              {d.hospital.name}
-              {d.department ? ` · ${d.department}` : ''}
-            </span>
-          </div>
-          <Chip tone="orange">{dDay(d.date)}</Chip>
-        </section>
-      )}
-
       {loading && <p className="t-caption">불러오는 중…</p>}
       <ErrorText>{error}</ErrorText>
 
@@ -86,16 +72,21 @@ export function GuardianApplicants() {
 
       {d && list.length > 0 && (
         <>
-          <section className="hero hero--coral" aria-label="요청 요약">
-            <div className="row" style={{ gap: 12 }}>
-              <CharacterAvatar who="elder" size={56} />
-              <h1 className="hero__title" style={{ fontSize: 22 }}>
-                {d.senior.name} 님과
-                <br />
-                함께 갈 분을 골라 주세요
-              </h1>
+          <section aria-label="동행 요청 내용" className="col" style={{ gap: 16, padding: '22px 20px 20px', borderRadius: 26, background: 'var(--brand-accent-soft)' }}>
+            <div className="row" style={{ alignItems: 'flex-end', justifyContent: 'space-between', gap: 8 }}>
+              <div className="col" style={{ gap: 10, paddingBottom: 6 }}>
+                <span style={{ alignSelf: 'flex-start', padding: '4px 12px', borderRadius: 999, background: '#fff', color: 'var(--accent-ink)', fontSize: 13, fontWeight: 700 }}>{dDay(d.date)}</span>
+                <h1 className="t-h1">
+                  {d.senior.name} 님과
+                  <br />
+                  함께 갈 분을
+                  <br />
+                  골라 주세요
+                </h1>
+              </div>
+              <Character who="elder" size={96} />
             </div>
-            <dl className="info-list">
+            <dl className="info-list" style={{ margin: 0, background: '#fff', borderRadius: 18, padding: 16, display: 'grid', gridTemplateColumns: '84px 1fr', rowGap: 8, fontSize: 15, lineHeight: 1.5 }}>
               {infoRows(d).map(([k, v]) => (
                 <div key={k} style={{ display: 'contents' }}>
                   <dt>{k}</dt>
@@ -105,9 +96,11 @@ export function GuardianApplicants() {
             </dl>
           </section>
 
-          <div className="col" style={{ gap: 4 }}>
+          <div className="row" style={{ alignItems: 'baseline', justifyContent: 'space-between', gap: 8, padding: '8px 4px 0', flexWrap: 'wrap' }}>
             <h2 className="t-h2">신청한 봉사자 {list.length}명</h2>
-            <p className="t-caption">한 분을 고르면 나머지는 마감돼요</p>
+            <span className="t-caption" style={{ fontSize: 14 }}>
+              한 분을 고르면 나머지는 마감돼요
+            </span>
           </div>
 
           {list.map((a) => (
@@ -123,37 +116,41 @@ export function GuardianApplicants() {
 function ApplicantCard({ a, requestId }: { a: ApplicationItem; requestId: number }) {
   const v = a.volunteer
   return (
-    <article className="applicant">
-      <div className="applicant__head">
-        <CharacterAvatar who="volunteer" size={52} />
-        <div className="col fill" style={{ gap: 2 }}>
-          <span style={{ fontSize: 17, fontWeight: 700 }}>
-            {v.name} <span className="t-sub">· {v.age}세 · {GENDER_TEXT[v.gender as 'MALE' | 'FEMALE'] ?? ''}</span>
+    <article className="col" style={{ gap: 18, padding: 16, borderRadius: 24, background: '#fff', border: '1px solid var(--line-default)' }}>
+      {a.message && (
+        <div style={{ position: 'relative', background: 'var(--brand-primary-soft)', borderRadius: 18, padding: '14px 16px' }}>
+          <span style={{ display: 'block', fontSize: 13, fontWeight: 700, color: 'var(--primary-ink)', marginBottom: 4 }}>신청 한 마디</span>
+          <p style={{ margin: 0, fontSize: 16, lineHeight: 1.65 }}>{a.message}</p>
+          <span aria-hidden="true" style={{ position: 'absolute', left: 34, bottom: -7, width: 14, height: 14, background: 'var(--brand-primary-soft)', transform: 'rotate(45deg)', borderRadius: 2 }} />
+        </div>
+      )}
+      <div className="row" style={{ gap: 14 }}>
+        <CharacterAvatar who="volunteer" size={60} />
+        <div className="col fill" style={{ gap: 3 }}>
+          <span style={{ fontSize: 18, fontWeight: 700 }}>
+            {v.name} <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--text-secondary)' }}>· {v.age}세 · {GENDER_TEXT[v.gender as 'MALE' | 'FEMALE'] ?? ''}</span>
           </span>
-          <span className="t-sub">
+          <span className="t-caption" style={{ fontSize: 14 }}>
             {v.school} {v.major} {v.grade}학년 · 고향 {v.hometown}
           </span>
         </div>
       </div>
-      <div className="row" style={{ gap: 6 }}>
-        {v.verified && <Chip tone="green">재학 인증</Chip>}
-        <Chip tone="gray">{`동행 ${v.visitCount}회`}</Chip>
+      <div className="row" style={{ gap: 10 }}>
+        {v.verified && (
+          <span className="row" style={{ gap: 4, padding: '4px 10px', borderRadius: 999, background: 'var(--brand-primary-soft)', color: 'var(--primary-ink)', fontSize: 13, fontWeight: 700 }}>
+            <Icon name="shield" size={14} />
+            재학 인증
+          </span>
+        )}
+        <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--text-secondary)' }}>동행 {v.visitCount}회</span>
       </div>
-      {a.message && (
-        <p className="bubble" style={{ margin: 0 }}>
-          <span className="bubble__label">신청 한 마디</span>
-          {a.message}
-        </p>
-      )}
-      <div className="col" style={{ gap: 8 }}>
-        <div className="row" style={{ gap: 8 }}>
-          <Button variant="ghost" style={{ width: 120 }} to={`/guardian/volunteer?userId=${v.userId}&requestId=${requestId}&applicationId=${a.applicationId}`}>
-            프로필 보기
-          </Button>
-          <Button className="fill" to={`/guardian/applicants/confirm?requestId=${requestId}&applicationId=${a.applicationId}`}>
-            이분과 같이 가요
-          </Button>
-        </div>
+      <div className="row" style={{ gap: 10 }}>
+        <Link className="btn btn--sm btn--secondary" style={{ flex: 1, fontSize: 16, borderRadius: 16 }} to={`/guardian/volunteer?userId=${v.userId}&requestId=${requestId}&applicationId=${a.applicationId}`}>
+          프로필 보기
+        </Link>
+        <Link className="btn btn--sm btn--primary" style={{ flex: 1.5, fontSize: 16, borderRadius: 16 }} to={`/guardian/applicants/confirm?requestId=${requestId}&applicationId=${a.applicationId}`}>
+          이분과 같이 가요
+        </Link>
       </div>
     </article>
   )
@@ -195,7 +192,7 @@ export function GuardianApplicantConfirm() {
       {a && (
         <>
           <section className="hero hero--teal hero--center">
-            <CharacterPair width={220} />
+            <CharacterPair width={180} />
             <h1 className="hero__title">
               {a.volunteer.name} 봉사자와
               <br />
@@ -210,8 +207,8 @@ export function GuardianApplicantConfirm() {
           <section className="point-list" aria-label="확정하면 달라지는 점">
             <h2 className="point-list__title">확정하면 이렇게 돼요</h2>
             <Point icon="phone" title="연락처가 서로 공개돼요" desc="동행 전에 직접 연락할 수 있어요." />
-            {others > 0 && <Point icon="check" title={`나머지 신청 ${others}건은 마감돼요`} desc="확정한 뒤에는 다른 봉사자를 다시 고를 수 없어요." />}
-            <Point icon="calendar" title="동행 2일 전 이후 취소는 기록에 남아요" desc="그 전에는 기록 없이 취소할 수 있어요." />
+            {others > 0 && <Point icon="xcircle" warn title={`나머지 신청 ${others}건은 마감돼요`} desc="확정한 뒤에는 다른 봉사자를 다시 고를 수 없어요." />}
+            <Point icon="alert" warn title="동행 2일 전 이후 취소는 기록에 남아요" desc="그 전에는 기록 없이 취소할 수 있어요." />
           </section>
         </>
       )}
@@ -219,10 +216,10 @@ export function GuardianApplicantConfirm() {
   )
 }
 
-function Point({ icon, title, desc }: { icon: 'phone' | 'check' | 'calendar'; title: string; desc: string }) {
+function Point({ icon, title, desc, warn }: { icon: 'phone' | 'xcircle' | 'alert'; title: string; desc: string; warn?: boolean }) {
   return (
     <div className="point">
-      <span className="point__icon">
+      <span className="point__icon" style={warn ? { background: 'var(--brand-accent-soft)', color: '#C24E36' } : undefined}>
         <Icon name={icon} size={20} />
       </span>
       <div className="col" style={{ gap: 2 }}>

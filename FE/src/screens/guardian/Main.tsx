@@ -3,7 +3,6 @@ import { useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { profileApi, requestApi, visitApi } from '../../api/services'
 import {
-  GENDER_PREF_LABEL,
   MEET_PLACE_LABEL,
   TRAVEL_MODE_LABEL,
   NEED_LABEL,
@@ -13,12 +12,13 @@ import {
 } from '../../api/labels'
 import type { GenderPref, MeetPlaceType, MyRequestItem, Need, TargetType, TravelMode } from '../../api/types'
 import { Button } from '../../components/common/Button'
-import { Chip, FilterChips, ToggleChipGroup } from '../../components/common/Chip'
+import { ChoiceChips, Chip, FilterChips, ToggleChipGroup } from '../../components/common/Chip'
 import { ErrorText, Field, SelectField } from '../../components/common/Form'
 import { Icon, type IconName } from '../../components/common/Icon'
 import { Avatar, Screen, Spacer, TopBar } from '../../components/common/Layout'
 import { GUARDIAN_TABS, TabBar } from '../../components/common/TabBar'
 import { ModeSwitchButton, ModeSwitchCard } from '../../components/common/ModeSwitch'
+import { CharacterAvatar, CharacterPair } from '../../components/common/Character'
 import { EmptyState, Status } from '../../components/common/States'
 import { useAuth } from '../../auth/AuthContext'
 import { useAction, useApi } from '../../hooks/useApi'
@@ -69,8 +69,10 @@ export function GuardianHome() {
   return (
     <Screen footer={tabs}>
       <div className="row row--between">
-        <span className="row" style={{ gap: 6, padding: '8px 12px', borderRadius: 999, background: '#fff', boxShadow: 'inset 0 0 0 1px var(--line-default)', fontSize: 15, fontWeight: 700 }}>
+        <span className="row" style={{ gap: 8, padding: '6px 14px 6px 8px', borderRadius: 999, background: '#fff', boxShadow: 'inset 0 0 0 1.5px var(--line-soft)', fontSize: 15, fontWeight: 700 }}>
+          <CharacterAvatar who="elder" size={28} />
           {seniors.data?.[0] ? `${seniors.data[0].name} 님` : '나'}
+          <Icon name="down" size={16} />
         </span>
         <span className="row" style={{ gap: 4 }}>
           <BellButton />
@@ -109,9 +111,9 @@ export function GuardianHome() {
               </div>
             </>
           )}
-          <Button variant="secondary" size="sm" to={`/guardian/live?requestId=${active.requestId}`}>
-            실시간으로 보기
-          </Button>
+          <Link className="btn btn--sm btn--on-dark" to={`/guardian/live?requestId=${active.requestId}`}>
+            동행 현황 보기
+          </Link>
         </section>
       )}
 
@@ -195,91 +197,122 @@ export function GuardianApply() {
     if (res) navigate('/guardian/home')
   }
 
+  const needLabels = NEEDS.map((n) => NEED_LABEL[n])
   return (
-    <Screen>
+    <Screen
+      cta={
+        <Button onClick={send} disabled={submit.pending}>
+          {submit.pending ? '신청 중…' : '신청하기'}
+        </Button>
+      }
+    >
       <TopBar title="동행 신청" />
-      <div className="field" style={{ gap: 8 }}>
-        <span className="t-label">누구의 병원 동행인가요?</span>
-        <div className="row" role="group" aria-label="요청 대상" style={{ gap: 8 }}>
-          {(['SELF', 'FAMILY'] as TargetType[]).map((t) => (
-            <button
-              key={t}
-              type="button"
-              aria-pressed={targetType === t}
-              className={`toggle-chip fill ${targetType === t ? 'toggle-chip--on' : ''}`}
-              style={{ justifyContent: 'center', height: 48 }}
-              onClick={() => setTargetType(t)}
-            >
-              {t === 'SELF' ? '나' : '가족'}
-            </button>
-          ))}
+      <section className="card" style={{ gap: 16 }}>
+        <h2 className="t-h2" style={{ fontSize: 17 }}>
+          누구와, 어디로 갈까요
+        </h2>
+        <ChoiceChips
+          label="누구의 병원 동행인가요?"
+          options={[
+            { value: 'SELF', label: '나' },
+            { value: 'FAMILY', label: '가족' },
+          ]}
+          value={targetType}
+          onChange={(v) => setTargetType(v as TargetType)}
+          stretch
+          hint="나를 고르면 내 정보로 바로 요청하고, 진료 요약도 나에게 와요."
+        />
+        {targetType === 'FAMILY' && (
+          <>
+            <SelectField
+              label="동행받는 분"
+              icon="user"
+              placeholder="동행받는 분을 선택해 주세요"
+              value={seniorId}
+              onChange={(e) => setSeniorId(e.target.value)}
+              options={(seniors.data ?? []).map((s) => ({ value: s.seniorId, label: `${s.name} (${s.age}세) · ${s.region}` }))}
+            />
+            <Link className="see-all" to="/guardian/senior/new">
+              + 동행받는 분 등록하기
+            </Link>
+          </>
+        )}
+        <SelectField
+          label="병원"
+          icon="hospital"
+          placeholder="병원을 선택해 주세요"
+          value={hospitalId}
+          onChange={(e) => setHospitalId(e.target.value)}
+          options={(hospitals.data ?? []).map((h) => ({ value: h.hospitalId, label: h.name }))}
+        />
+        <Field label="진료과" placeholder="예: 정형외과" value={department} onChange={(e) => setDepartment(e.target.value)} />
+      </section>
+
+      <section className="card" style={{ gap: 16 }}>
+        <h2 className="t-h2" style={{ fontSize: 17 }}>
+          언제, 어디서 만날까요
+        </h2>
+        <div className="row" style={{ gap: 12, alignItems: 'flex-end' }}>
+          <div style={{ flex: 1.3, minWidth: 0 }}>
+            <Field label="날짜" type="date" min={todayString()} value={date} onChange={(e) => setDate(e.target.value)} />
+          </div>
+          <div className="fill">
+            <Field label="시간" type="time" value={meetTime} onChange={(e) => setMeetTime(e.target.value)} />
+          </div>
         </div>
-        <span className="t-caption">나를 고르면 내 정보로 바로 요청하고, 진료 요약도 나에게 와요.</span>
-      </div>
-      {targetType === 'FAMILY' && (
-        <>
-          <SelectField
-            label="동행받는 분"
-            icon="user"
-            placeholder="동행받는 분을 선택해 주세요"
-            value={seniorId}
-            onChange={(e) => setSeniorId(e.target.value)}
-            options={(seniors.data ?? []).map((s) => ({ value: s.seniorId, label: `${s.name} (${s.age}세) · ${s.region}` }))}
-          />
-          <Link className="t-sub t-medium t-primary" to="/guardian/senior/new">
-            + 동행받는 분 등록하기
-          </Link>
-        </>
-      )}
-      <SelectField
-        label="병원"
-        icon="hospital"
-        placeholder="병원을 선택해 주세요"
-        value={hospitalId}
-        onChange={(e) => setHospitalId(e.target.value)}
-        options={(hospitals.data ?? []).map((h) => ({ value: h.hospitalId, label: h.name }))}
-      />
-      <Field label="진료과" placeholder="예: 정형외과" value={department} onChange={(e) => setDepartment(e.target.value)} />
-      <Field label="날짜" icon="calendar" type="date" min={todayString()} value={date} onChange={(e) => setDate(e.target.value)} />
-      <Field label="만나는 시간" type="time" value={meetTime} onChange={(e) => setMeetTime(e.target.value)} />
-      <SelectField
-        label="만나는 곳"
-        value={meetPlaceType}
-        onChange={(e) => setMeetPlaceType(e.target.value as MeetPlaceType)}
-        options={(Object.keys(MEET_PLACE_LABEL) as MeetPlaceType[]).map((k) => ({ value: k, label: MEET_PLACE_LABEL[k] }))}
-      />
-      <Field label="만나는 주소" icon="pin" placeholder="경북 칠곡군 왜관읍 ○○로 12" value={meetAddress} onChange={(e) => setMeetAddress(e.target.value)} />
-      <SelectField
-        label="대구까지 이동 방법"
-        value={travelMode}
-        onChange={(e) => setTravelMode(e.target.value as TravelMode)}
-        options={(Object.keys(TRAVEL_MODE_LABEL) as TravelMode[]).map((k) => ({ value: k, label: TRAVEL_MODE_LABEL[k] }))}
-      />
-      <p className="t-caption" style={{ margin: 0 }}>
-        차비·진료비·약값은 동행받는 분이 직접 내요. 봉사자는 돈을 대신 내지 않아요.
-      </p>
-      <ToggleChipGroup
-        label="필요한 도움"
-        options={NEEDS.map((n) => NEED_LABEL[n])}
-        onChange={(labels) => setNeeds(NEEDS.filter((n) => labels.includes(NEED_LABEL[n])))}
-      />
-      <Field label="필요한 봉사자 수" type="number" min={1} max={2} value={helpersNeeded} onChange={(e) => setHelpersNeeded(e.target.value)} />
-      <SelectField
-        label="봉사자 성별"
-        value={genderPref}
-        onChange={(e) => setGenderPref(e.target.value as GenderPref)}
-        options={(Object.keys(GENDER_PREF_LABEL) as GenderPref[]).map((k) => ({ value: k, label: GENDER_PREF_LABEL[k] }))}
-      />
-      <label className="field">
-        <span className="t-label">봉사자에게 전할 말</span>
-        <textarea className="textarea" placeholder="귀가 어두우셔서 크게 천천히 말씀해 주세요." value={notes} onChange={(e) => setNotes(e.target.value)} />
-      </label>
+        <ChoiceChips
+          label="만나는 곳"
+          options={(Object.keys(MEET_PLACE_LABEL) as MeetPlaceType[]).map((k) => ({ value: k, label: MEET_PLACE_LABEL[k] }))}
+          value={meetPlaceType}
+          onChange={(v) => setMeetPlaceType(v as MeetPlaceType)}
+        />
+        <ChoiceChips
+          label="대구까지 이동 방법"
+          options={(Object.keys(TRAVEL_MODE_LABEL) as TravelMode[]).map((k) => ({ value: k, label: TRAVEL_MODE_LABEL[k] }))}
+          value={travelMode}
+          onChange={(v) => setTravelMode(v as TravelMode)}
+          hint="차비·진료비·약값은 동행받는 분이 직접 내요. 봉사자는 돈을 대신 내지 않아요."
+        />
+        <Field label="만나는 주소" placeholder="경북 의성군 의성읍 ○○로 12" value={meetAddress} onChange={(e) => setMeetAddress(e.target.value)} />
+      </section>
+
+      <section className="card" style={{ gap: 16 }}>
+        <h2 className="t-h2" style={{ fontSize: 17 }}>
+          어떤 도움이 필요한가요
+        </h2>
+        <ToggleChipGroup label="필요한 도움" options={needLabels} onChange={(labels) => setNeeds(NEEDS.filter((n) => labels.includes(NEED_LABEL[n])))} />
+        <label className="field">
+          <span className="t-label">봉사자에게 전할 말</span>
+          <textarea className="textarea" rows={3} placeholder="귀가 어두우셔서 크게 천천히 말씀해 주세요." value={notes} onChange={(e) => setNotes(e.target.value)} />
+        </label>
+      </section>
+
+      <section className="card" style={{ gap: 16 }}>
+        <h2 className="t-h2" style={{ fontSize: 17 }}>
+          어떤 봉사자가 좋을까요
+        </h2>
+        <ChoiceChips
+          label="필요한 봉사자 수"
+          options={[
+            { value: '1', label: '1명' },
+            { value: '2', label: '2명' },
+          ]}
+          value={helpersNeeded}
+          onChange={setHelpersNeeded}
+        />
+        <ChoiceChips
+          label="봉사자 성별"
+          options={[
+            { value: 'ANY', label: '상관없어요' },
+            { value: 'FEMALE', label: '여성' },
+            { value: 'MALE', label: '남성' },
+          ]}
+          value={genderPref}
+          onChange={(v) => setGenderPref(v as GenderPref)}
+        />
+      </section>
       <Status loading={seniors.loading || hospitals.loading} error={seniors.error ?? hospitals.error} />
       <ErrorText>{submit.error}</ErrorText>
-      <Spacer />
-      <Button onClick={send} disabled={submit.pending}>
-        {submit.pending ? '신청 중…' : '신청하기'}
-      </Button>
     </Screen>
   )
 }
@@ -294,59 +327,71 @@ export function GuardianConfirmed() {
   const p = profile.data
 
   return (
-    <Screen>
+    <Screen
+      cta={
+        d && vol ? (
+          <>
+            <div className="row" style={{ gap: 10 }}>
+              <Button variant="secondary" style={{ width: 120 }} onClick={() => (window.location.href = `tel:${vol.phone}`)}>
+                <Icon name="phone" size={20} />
+                전화
+              </Button>
+              <Button className="fill" to="/guardian/home">
+                일정 확인하기
+              </Button>
+            </div>
+            <Button variant="ghost" to={`/guardian/cancel?requestId=${d.requestId}`}>
+              요청 취소하기
+            </Button>
+          </>
+        ) : undefined
+      }
+    >
       <TopBar title="동행 확정" />
       <Status loading={target.loading || detail.loading} error={target.error ?? detail.error} />
-      {d && !vol && <p className="t-body">아직 확정된 봉사자가 없어요.</p>}
+      {d && !vol && <EmptyState title="아직 확정된 봉사자가 없어요" waiting />}
       {d && vol && (
         <>
-          <div className="col" style={{ gap: 4 }}>
+          <section className="col" style={{ gap: 10, alignItems: 'center', textAlign: 'center', padding: 20, borderRadius: 26, background: 'var(--brand-primary-soft)' }}>
+            <CharacterPair width={200} />
             <h1 className="t-h1">
-              {d.senior.name}님과 함께할
+              {d.senior.name} 님과 함께할
               <br />
               봉사자가 정해졌어요
             </h1>
-            <p className="t-sub">
-              {formatDateTime(d.date, d.meetTime)} {MEET_PLACE_LABEL[d.meetPlaceType]}에서 만나요
+            <p className="t-sub" style={{ color: 'var(--chip-gray-ink)' }}>
+              {formatDateTime(d.date, d.meetTime)} · {d.meetAddress ?? MEET_PLACE_LABEL[d.meetPlaceType]}에서 만나요
             </p>
-          </div>
-          <div className="card" style={{ padding: 20 }}>
+          </section>
+          <section className="card" style={{ gap: 14, padding: '16px 18px' }}>
             <div className="row" style={{ gap: 14 }}>
-              <Avatar size={64} />
-              <div className="col" style={{ gap: 2 }}>
+              <CharacterAvatar who="volunteer" size={64} />
+              <div className="col" style={{ gap: 3 }}>
                 <span style={{ fontSize: 19, fontWeight: 700 }}>{vol.name} 봉사자</span>
-                <span className="t-sub">{p ? `${p.school} · 동행 ${p.visitCount}회` : vol.phone}</span>
+                <span className="t-sub">{p ? `${p.school} · 동행 ${p.visitCount}회` : ''}</span>
               </div>
             </div>
             {p && (
-              <div className="col" style={{ gap: 10, paddingTop: 4 }}>
-                {[p.verified ? '신원 확인 완료' : '신원 확인 대기', `${p.major} ${p.grade}학년`].map((s) => (
-                  <span key={s} className="row t-body t-medium" style={{ gap: 8 }}>
-                    <Icon name="shield" size={20} color="var(--brand-primary)" />
-                    {s}
+              <div className="col" style={{ gap: 8, fontSize: 15, fontWeight: 500 }}>
+                {p.verified && (
+                  <span className="row" style={{ gap: 8, color: 'var(--primary-ink)' }}>
+                    <Icon name="shield" size={20} />
+                    재학 인증
                   </span>
-                ))}
+                )}
+                <span className="row" style={{ gap: 8 }}>
+                  <Icon name="user" size={20} color="var(--brand-primary)" />
+                  {p.major} {p.grade}학년
+                </span>
               </div>
             )}
-            {p?.thanksMessages[0] && (
-              <div className="col" style={{ gap: 6, padding: '14px 16px', borderRadius: 14, background: 'var(--bg-canvas)' }}>
-                <span className="t-sub" style={{ color: 'var(--text-primary)' }}>“{p.thanksMessages[0].message}”</span>
-                <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-secondary)' }}>다른 요청자 후기</span>
+            {p?.thanksMessages?.[0] && (
+              <div className="col" style={{ gap: 4, padding: '12px 14px', borderRadius: 16, background: 'var(--brand-primary-soft)' }}>
+                <span style={{ fontSize: 15, lineHeight: 1.6 }}>“{p.thanksMessages[0].message}”</span>
+                <span className="t-caption">다른 요청자 후기</span>
               </div>
             )}
-          </div>
-          <Spacer />
-          <div className="row" style={{ gap: 10 }}>
-            <Button variant="ghost" style={{ width: 120 }} onClick={() => (window.location.href = `tel:${vol.phone}`)}>
-              전화
-            </Button>
-            <Button className="fill" to="/guardian/home">
-              일정 확인하기
-            </Button>
-          </div>
-          <Button variant="ghost" to={`/guardian/cancel?requestId=${d.requestId}`}>
-            요청 취소하기
-          </Button>
+          </section>
         </>
       )}
     </Screen>
@@ -429,7 +474,7 @@ export function GuardianReport() {
     ? [
         ['calendar', '다음 진료', sum.nextVisit],
         ['pill', '처방약', sum.medication],
-        ['doc', '챙겨야 할 일', sum.guardianTodo.join(' / ')],
+        ['user', '챙겨야 할 일', sum.guardianTodo.join(' / ')],
       ]
     : []
 
@@ -441,12 +486,25 @@ export function GuardianReport() {
   }
 
   return (
-    <Screen>
+    <Screen
+      cta={
+        <>
+          {canApprove && (
+            <Button onClick={doApprove} disabled={approve.pending}>
+              {approve.pending ? '승인 중…' : '봉사시간 승인하기'}
+            </Button>
+          )}
+          <Button variant="ghost" to="/guardian/apply">
+            다음 동행 신청하기
+          </Button>
+        </>
+      }
+    >
       <TopBar title="오늘 진료 기록" />
       {!requestId && <ErrorText>동행 기록에서 들어와 주세요.</ErrorText>}
       <Status loading={loading || summary.loading} error={error ?? (v?.hasSummary === false ? null : summary.error)} />
       {v && (
-        <div className="col" style={{ gap: 6, alignItems: 'flex-start' }}>
+        <div className="col" style={{ gap: 8, alignItems: 'flex-start', padding: '0 4px' }}>
           {v.endedAt && <Chip>{`귀가 완료 ${hhmm(v.endedAt)}`}</Chip>}
           <h1 className="t-h1">
             {detail.data?.senior.name}님 동행
@@ -457,14 +515,14 @@ export function GuardianReport() {
       )}
       {v && v.hasSummary === false && <p className="t-body">아직 봉사자가 진료 요약을 작성하지 않았어요.</p>}
       {sum && (
-        <div className="card" style={{ gap: 8 }}>
-          <span className="t-bold t-primary" style={{ fontSize: 13 }}>
+        <div className="card" style={{ gap: 10 }}>
+          <span className="t-bold" style={{ fontSize: 14, color: 'var(--brand-primary-ink, #0E5F56)' }}>
             진료 내용
           </span>
           {sum.todayPoints.map((p) => (
             <p key={p} className="t-body">· {p}</p>
           ))}
-          <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{sum.disclaimer}</span>
+          <span style={{ fontSize: 13, lineHeight: 1.55, color: 'var(--text-secondary)' }}>{sum.disclaimer || '이 요약은 봉사자 메모를 정리한 것이에요. 정확한 내용은 의료진에게 확인해 주세요.'}</span>
         </div>
       )}
       {s?.status === 'FALLBACK' && (
@@ -477,12 +535,14 @@ export function GuardianReport() {
         </div>
       )}
       {facts.length > 0 && (
-        <div className="card card--list">
-          {facts.map(([ic, k, val]) => (
-            <div key={k} className="list-item">
-              <Icon name={ic} size={20} color="var(--brand-primary)" />
-              <div className="col">
-                <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-secondary)' }}>{k}</span>
+        <div className="card" style={{ padding: '4px 18px', gap: 0 }}>
+          {facts.map(([ic, k, val], n) => (
+            <div key={k} className="row" style={{ gap: 12, alignItems: 'flex-start', padding: '14px 0', borderBottom: n < facts.length - 1 ? '1px solid var(--line-soft)' : 'none' }}>
+              <span style={{ width: 36, height: 36, flexShrink: 0, borderRadius: '50%', background: 'var(--brand-primary-soft, #DDF3EC)', color: '#0E5F56', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Icon name={ic} size={20} />
+              </span>
+              <div className="col" style={{ gap: 2 }}>
+                <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{k}</span>
                 <span className="t-body t-bold">{val}</span>
               </div>
             </div>
@@ -491,20 +551,16 @@ export function GuardianReport() {
       )}
       {(canApprove || approved || v?.approved) && (
         <>
-          {canApprove && <Field label="봉사자에게 감사 메시지 (선택)" value={thanks} onChange={(e) => setThanks(e.target.value)} />}
+          {canApprove && (
+            <label className="field">
+              <span className="t-label">봉사자에게 감사 메시지 (선택)</span>
+              <textarea className="textarea" rows={3} placeholder="고마운 마음을 전해 보세요." value={thanks} onChange={(e) => setThanks(e.target.value)} />
+            </label>
+          )}
           <ErrorText>{approve.error}</ErrorText>
           {(approved || v?.approved) && <p className="t-caption t-accent t-medium">봉사시간을 승인했어요.</p>}
         </>
       )}
-      <Spacer />
-      {canApprove && (
-        <Button onClick={doApprove} disabled={approve.pending}>
-          {approve.pending ? '승인 중…' : '봉사시간 승인하기'}
-        </Button>
-      )}
-      <Button variant="ghost" to="/guardian/apply">
-        다음 동행 신청하기
-      </Button>
     </Screen>
   )
 }
@@ -585,6 +641,18 @@ export function GuardianMy() {
             <Icon name="chev" size={20} color="var(--icon-muted)" />
           </div>
         ))}
+      </div>
+      <div className="card card--list">
+        <Link to="/guardian/notifications/settings" className="list-item row--between" style={{ paddingRight: 12 }}>
+          <span className="row" style={{ gap: 12 }}>
+            <Icon name="gear" size={20} color="var(--brand-primary)" />
+            <span className="col" style={{ gap: 2 }}>
+              <span className="t-body t-bold">알림 설정</span>
+              <span className="t-sub">받을 동행 소식을 골라요</span>
+            </span>
+          </span>
+          <Icon name="chev" size={20} color="var(--icon-muted)" />
+        </Link>
       </div>
       <Button
         variant="ghost"

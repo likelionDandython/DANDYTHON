@@ -80,3 +80,48 @@ export function FilterChips({
     </div>
   )
 }
+
+/** 하나만 고르는 칩 묶음 (시안의 만나는 곳·성별·인원 선택) */
+export function ChoiceChips({
+  label,
+  options,
+  value,
+  onChange,
+  hint,
+  stretch,
+}: {
+  label: string
+  options: { value: string; label: string }[]
+  value: string
+  onChange: (v: string) => void
+  hint?: string
+  /** 칩을 가로로 꽉 채워요 (나 / 가족) */
+  stretch?: boolean
+}) {
+  return (
+    <fieldset className="field" style={{ margin: 0, padding: 0, border: 0 }}>
+      <legend className="t-label" style={{ padding: 0, marginBottom: 8 }}>
+        {label}
+      </legend>
+      <div className="chip-group">
+        {options.map((o) => (
+          <button
+            key={o.value}
+            type="button"
+            aria-pressed={value === o.value}
+            className={`toggle-chip ${value === o.value ? 'toggle-chip--on' : ''}`}
+            style={stretch ? { flex: 1, justifyContent: 'center' } : undefined}
+            onClick={() => onChange(o.value)}
+          >
+            {o.label}
+          </button>
+        ))}
+      </div>
+      {hint && (
+        <p className="t-caption" style={{ margin: '8px 0 0' }}>
+          {hint}
+        </p>
+      )}
+    </fieldset>
+  )
+}

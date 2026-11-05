@@ -68,25 +68,35 @@ export function Start() {
   const { session } = useAuth()
   if (session) return <Navigate to={homePath(session)} replace />
   return (
-    <Screen bodyStyle={{ paddingTop: 40, alignItems: 'center', gap: 16 }}>
-      <CharacterPair width={240} />
-      <h1 className="t-display center">
-        경북에서 대구 병원까지
-        <br />
-        같이 가요
-      </h1>
-      <p className="t-body center" style={{ color: 'var(--text-secondary)' }}>
-        내 병원길이든 가족의 병원길이든 동행을 요청할 수도,
-        <br />
-        누군가의 곁을 지키는 봉사자가 될 수도 있어요.
-        <br />
-        계정 하나로 둘 다 할 수 있어요.
-      </p>
-      <Spacer />
-      <Button to="/signup">시작하기</Button>
-      <Button variant="ghost" to="/login">
-        이미 계정이 있어요
-      </Button>
+    <Screen
+      bodyStyle={{ gap: 20 }}
+      cta={
+        <>
+          <Button to="/signup">시작하기</Button>
+          <Button variant="ghost" to="/login">
+            이미 계정이 있어요
+          </Button>
+        </>
+      }
+    >
+      <img src="/logo.png" alt="같이가요" width={150} height={150} style={{ alignSelf: 'center', objectFit: 'contain', mixBlendMode: 'multiply' }} />
+      <section className="col" style={{ gap: 10, alignItems: 'center', textAlign: 'center', padding: '22px 20px 24px', borderRadius: 26, background: 'var(--brand-primary-soft)' }}>
+        <CharacterPair width={180} />
+        <h1 className="t-display">
+          경북에서 대구 병원까지
+          <br />
+          같이 가요
+        </h1>
+        <p className="t-sub" style={{ color: 'var(--chip-gray-ink)' }}>
+          내 병원길이든 가족의 병원길이든 동행을
+          <br />
+          요청할 수도, 누군가의 곁을 지키는
+          <br />
+          봉사자가 될 수도 있어요.
+          <br />
+          계정 하나로 둘 다 할 수 있어요.
+        </p>
+      </section>
     </Screen>
   )
 }
@@ -336,7 +346,7 @@ export function WhoFor() {
       </h1>
       <p className="t-sub">요청할 때마다 다시 고를 수 있어요. 나와 가족 둘 다 해도 돼요.</p>
       <ChoiceCard tone="plain" onClick={() => navigate('/guardian/home')} leading={<IconCircle name="user" />} title="나" desc="내 병원 동행을 요청해요. 가입한 내 정보로 바로 시작해요." />
-      <ChoiceCard tone="plain" onClick={() => navigate('/guardian/senior/new')} leading={<IconCircle name="heart" />} title="가족" desc="가족의 병원 동행을 요청해요. 동행받을 분 정보를 등록해요." />
+      <ChoiceCard tone="plain" onClick={() => navigate('/guardian/senior/new')} leading={<IconCircle name="users" />} title="가족" desc="가족의 병원 동행을 요청해요. 동행받을 분 정보를 등록해요." />
     </Screen>
   )
 }
