@@ -5,11 +5,13 @@ import { Button } from '../../components/common/Button'
 import { Character, CharacterAvatar } from '../../components/common/Character'
 import { Chip } from '../../components/common/Chip'
 import { ErrorText } from '../../components/common/Form'
+import { HometownBadge } from '../../components/common/HometownBadge'
 import { Icon } from '../../components/common/Icon'
 import { Screen, Spacer, TopBar } from '../../components/common/Layout'
 import { Status } from '../../components/common/States'
 import { useAction, useApi } from '../../hooks/useApi'
 import { dDay, formatDateTime, minutesToText } from '../../lib/format'
+import { isHometownNeighbor } from '../../lib/hometown'
 
 const GENDER_TEXT = { FEMALE: '여', MALE: '남' } as const
 
@@ -21,6 +23,9 @@ export function GuardianVolunteerView() {
   const applicationId = params.get('applicationId')
   const profile = useApi(() => profileApi.getVolunteer(userId), [userId], !!userId)
   const p = profile.data
+  // 어느 요청에서 들어왔는지 알 때만 동행받는 분 거주지와 비교해 '고향 연결'을 보여줘요
+  const reqDetail = useApi(() => requestApi.detail(Number(requestId)), [requestId], !!requestId)
+  const neighbor = isHometownNeighbor(p?.hometown, reqDetail.data?.senior.region)
   // 지역은 화면 선택지 순서대로 보여줘요
   const regions = p?.regions ? REGIONS.filter((r) => p.regions.includes(r)) : []
 
@@ -38,8 +43,9 @@ export function GuardianVolunteerView() {
             <span className="t-sub">
               {p.school} {p.major} {p.grade}학년 · 고향 {p.hometown}
             </span>
-            <span className="row" style={{ gap: 6 }}>
+            <span className="row" style={{ gap: 6, flexWrap: 'wrap', justifyContent: 'center' }}>
               {p.verified && <Chip tone="green">재학 인증</Chip>}
+              {neighbor && <HometownBadge />}
               <Chip tone="gray">{`동행 ${p.visitCount}회`}</Chip>
               <Chip tone="gray">{minutesToText(p.totalMinutes)}</Chip>
             </span>
