@@ -17,6 +17,7 @@ import { ErrorText, Field, SelectField } from '../../components/common/Form'
 import { Icon, type IconName } from '../../components/common/Icon'
 import { Avatar, Screen, Spacer, TopBar } from '../../components/common/Layout'
 import { GUARDIAN_TABS, TabBar } from '../../components/common/TabBar'
+import { ThanksPresets } from '../../components/common/ThanksPresets'
 import { ModeSwitchButton, ModeSwitchCard } from '../../components/common/ModeSwitch'
 import { CharacterAvatar, CharacterPair } from '../../components/common/Character'
 import { EmptyState, Status } from '../../components/common/States'
@@ -541,13 +542,16 @@ export function GuardianReport() {
         <div className="col" style={{ gap: 8, alignItems: 'flex-start', padding: '0 4px' }}>
           {v.endedAt && <Chip>{`귀가 완료 ${hhmm(v.endedAt)}`}</Chip>}
           <h1 className="t-h1">
-            {detail.data?.senior.name}님 동행
-            <br />
-            {v.endedAt ? '기록이에요' : '진행 중이에요'}
+            {detail.data?.senior.name}님 동행 {v.endedAt ? '기록이에요' : '진행 중이에요'}
           </h1>
         </div>
       )}
       {v && v.hasSummary === false && <p className="t-body">아직 봉사자가 진료 요약을 작성하지 않았어요.</p>}
+      {sum && (
+        <p className="t-caption" style={{ margin: '0 4px', fontSize: 15, lineHeight: 1.6 }}>
+          괜찮다는 말씀 뒤에 담긴 오늘의 진료 기록이에요
+        </p>
+      )}
       {sum && (
         <div className="card" style={{ gap: 10 }}>
           <span className="t-bold" style={{ fontSize: 14, color: 'var(--brand-primary-ink, #0E5F56)' }}>
@@ -585,6 +589,7 @@ export function GuardianReport() {
       )}
       {(canApprove || approved || v?.approved) && (
         <>
+          {canApprove && <ThanksPresets value={thanks} onPick={setThanks} />}
           {canApprove && (
             <label className="field">
               <span className="t-label">봉사자에게 감사 메시지 (선택)</span>

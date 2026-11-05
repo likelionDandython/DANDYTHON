@@ -5,10 +5,12 @@ import type { ApplicationItem, RequestDetail } from '../../api/types'
 import { Button } from '../../components/common/Button'
 import { Character, CharacterAvatar, CharacterPair } from '../../components/common/Character'
 import { ErrorText } from '../../components/common/Form'
+import { HometownBadge } from '../../components/common/HometownBadge'
 import { Icon } from '../../components/common/Icon'
 import { Screen, TopBar } from '../../components/common/Layout'
 import { useAction, useApi } from '../../hooks/useApi'
 import { dDay, formatDateTime } from '../../lib/format'
+import { isHometownNeighbor } from '../../lib/hometown'
 import '../../design/styles'
 
 const GENDER_TEXT = { MALE: '남', FEMALE: '여' } as const
@@ -104,7 +106,7 @@ export function GuardianApplicants() {
           </div>
 
           {list.map((a) => (
-            <ApplicantCard key={a.applicationId} a={a} requestId={requestId} />
+            <ApplicantCard key={a.applicationId} a={a} requestId={requestId} seniorRegion={d?.senior.region} />
           ))}
 
         </>
@@ -113,8 +115,9 @@ export function GuardianApplicants() {
   )
 }
 
-function ApplicantCard({ a, requestId }: { a: ApplicationItem; requestId: number }) {
+function ApplicantCard({ a, requestId, seniorRegion }: { a: ApplicationItem; requestId: number; seniorRegion?: string }) {
   const v = a.volunteer
+  const neighbor = isHometownNeighbor(v.hometown, seniorRegion)
   return (
     <article className="col" style={{ gap: 18, padding: 16, borderRadius: 24, background: '#fff', border: '1px solid var(--line-default)' }}>
       {a.message && (
@@ -135,13 +138,14 @@ function ApplicantCard({ a, requestId }: { a: ApplicationItem; requestId: number
           </span>
         </div>
       </div>
-      <div className="row" style={{ gap: 10 }}>
+      <div className="row" style={{ gap: 10, flexWrap: 'wrap' }}>
         {v.verified && (
           <span className="row" style={{ gap: 4, padding: '4px 10px', borderRadius: 999, background: 'var(--brand-primary-soft)', color: 'var(--primary-ink)', fontSize: 13, fontWeight: 700 }}>
             <Icon name="shield" size={14} />
             재학 인증
           </span>
         )}
+        {neighbor && <HometownBadge />}
         <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--text-secondary)' }}>동행 {v.visitCount}회</span>
       </div>
       <div className="row" style={{ gap: 10 }}>
