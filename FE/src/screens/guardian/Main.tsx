@@ -542,9 +542,7 @@ export function GuardianReport() {
         <div className="col" style={{ gap: 8, alignItems: 'flex-start', padding: '0 4px' }}>
           {v.endedAt && <Chip>{`귀가 완료 ${hhmm(v.endedAt)}`}</Chip>}
           <h1 className="t-h1">
-            {detail.data?.senior.name}님 동행
-            <br />
-            {v.endedAt ? '기록이에요' : '진행 중이에요'}
+            {detail.data?.senior.name}님 동행 {v.endedAt ? '기록이에요' : '진행 중이에요'}
           </h1>
         </div>
       )}
