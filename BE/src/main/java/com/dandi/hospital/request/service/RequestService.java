@@ -2,6 +2,7 @@ package com.dandi.hospital.request.service;
 
 import com.dandi.hospital.global.exception.CustomException;
 import com.dandi.hospital.global.exception.ErrorCode;
+import com.dandi.hospital.global.enums.RequestStatus;
 import com.dandi.hospital.request.dto.CreateRequestDto;
 import com.dandi.hospital.request.dto.CreateRequestResult;
 import com.dandi.hospital.request.entity.Request;
@@ -22,11 +23,20 @@ public class RequestService {
                 .orElseThrow(() -> new CustomException(ErrorCode.REQUEST_NOT_FOUND));
     }
 
-    /** C의 Visit 생성과 B의 수락 처리가 같은 요청 행 잠금을 사용하도록 제공한다. */
     @Transactional
     public Request getForVisitCreation(Long requestId) {
+        return getForUpdate(requestId);
+    }
+
+    @Transactional
+    public Request getForUpdate(Long requestId) {
         return requestRepository.findByIdForUpdate(requestId)
                 .orElseThrow(() -> new CustomException(ErrorCode.REQUEST_NOT_FOUND));
+    }
+
+    @Transactional
+    public void changeStatus(Long requestId, RequestStatus expected, RequestStatus next) {
+        getForUpdate(requestId).changeStatus(expected, next);
     }
 
     @Transactional

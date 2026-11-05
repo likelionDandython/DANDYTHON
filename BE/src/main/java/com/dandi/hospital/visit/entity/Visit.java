@@ -2,6 +2,8 @@ package com.dandi.hospital.visit.entity;
 
 import com.dandi.hospital.global.entity.BaseEntity;
 import com.dandi.hospital.global.enums.VisitStep;
+import com.dandi.hospital.global.exception.CustomException;
+import com.dandi.hospital.global.exception.ErrorCode;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -66,6 +68,25 @@ public class Visit extends BaseEntity {
 
     public List<ChecklistItem> getChecklist() {
         return List.copyOf(checklist);
+    }
+
+    public void checkin(LocalDateTime time) {
+        if (time == null)
+            throw new CustomException(ErrorCode.INVALID_INPUT);
+        if (startedAt != null || endedAt != null
+                || checklist.stream().noneMatch(item -> item.step() == VisitStep.MEET))
+            throw new CustomException(ErrorCode.INVALID_STATUS);
+        checklist = checklist.stream()
+                .map(item -> item.step() == VisitStep.MEET
+                        ? new ChecklistItem(item.step(), item.label(), true, time) : item)
+                .toList();
+        startedAt = time;
+        recalculateStep();
+    }
+
+    private void recalculateStep() {
+        step = checklist.stream().filter(item -> !item.done()).map(ChecklistItem::step)
+                .findFirst().orElse(VisitStep.SEE_OFF);
     }
 
     public boolean hasMemo() {

@@ -6,6 +6,7 @@ import com.dandi.hospital.global.exception.ErrorCode;
 import com.dandi.hospital.request.entity.Request;
 import com.dandi.hospital.request.service.RequestService;
 import com.dandi.hospital.visit.dto.VisitCreateResponse;
+import com.dandi.hospital.visit.dto.CheckinResponse;
 import com.dandi.hospital.visit.entity.Visit;
 import com.dandi.hospital.visit.repository.VisitRepository;
 import com.dandi.hospital.volunteer.entity.Volunteer;
@@ -14,6 +15,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
+import java.time.LocalDateTime;
+
 @Service
 @RequiredArgsConstructor
 public class VisitService {
@@ -21,44 +25,76 @@ public class VisitService {
     private final ChecklistFactory checklistFactory;
     private final RequestService requestService;
     private final VolunteerService volunteerService;
+    private final VisitAccessPolicy accessPolicy;
+    private final Clock visitClock;
 
-    /**
-     * B의 수락 트랜잭션에서 인원 충족·CONFIRMED 전이 후 호출한다.
-     * B가 수락 관계와 정원을 검사하고, C는 확정 상태·저장된 프로필을 다시 확인한다.
-     * 기존 트랜잭션에 참여하므로 수락 실패 시 Visit도 함께 롤백된다.
-     */
     @Transactional
     public VisitCreateResponse create(Request request, Volunteer volunteer) {
         if (request == null || request.getId() == null || volunteer == null
                 || volunteer.getId() == null || volunteer.getUser() == null
-                || volunteer.getUser().getId() == null) {
+                || volunteer.getUser().getId() == null)
             throw new CustomException(ErrorCode.INVALID_INPUT);
-        }
 
-        // 기존 Visit이 없는 첫 생성도 직렬화한다. 잠금 순서는 Request → Visit이다.
         Request lockedRequest = requestService.getForVisitCreation(request.getId());
         Long volunteerId = volunteerService.getByUserId(volunteer.getUser().getId()).getUser().getId();
 
-        if (lockedRequest.getGuardianId().equals(volunteerId)) {
+        if (lockedRequest.getGuardianId().equals(volunteerId))
             throw new CustomException(ErrorCode.FORBIDDEN);
-        }
 
-        // 처리된 수락 요청의 재호출은 체크인 이후에도 기존 기록을 반환한다.
         var existing = visitRepository.findByRequestIdAndVolunteerId(lockedRequest.getId(), volunteerId);
         if (existing.isPresent()) {
-            if (lockedRequest.getStatus() == RequestStatus.CANCELED
-                    || lockedRequest.getStatus() == RequestStatus.RECRUITING) {
+            if (lockedRequest.getStatus() == RequestStatus.CANCELED || lockedRequest.getStatus() == RequestStatus.RECRUITING)
                 throw new CustomException(ErrorCode.INVALID_STATUS);
-            }
             return VisitCreateResponse.from(existing.get());
         }
 
-        if (lockedRequest.getStatus() != RequestStatus.CONFIRMED) {
+        if (lockedRequest.getStatus() != RequestStatus.CONFIRMED)
             throw new CustomException(ErrorCode.INVALID_STATUS);
-        }
 
-        Visit visit = Visit.create(lockedRequest.getId(), volunteerId,
-                checklistFactory.create(lockedRequest.getNeeds()));
+        Visit visit = Visit.create(lockedRequest.getId(), volunteerId, checklistFactory.create(lockedRequest.getNeeds()));
         return VisitCreateResponse.from(visitRepository.save(visit));
     }
+
+    @Transactional
+    public CheckinResponse checkin(Long visitId, Long actorId, LocalDateTime requestedTime) {
+        LockedVisit locked = loadForUpdate(visitId, actorId);
+        Visit visit = locked.visit();
+        Request request = locked.request();
+        requireActiveRequest(request);
+
+        if (visit.getStartedAt() != null)
+            return new CheckinResponse(visit.getId(), visit.getStartedAt());
+        if (request.getStatus() != RequestStatus.CONFIRMED && request.getStatus() != RequestStatus.IN_PROGRESS)
+            throw new CustomException(ErrorCode.INVALID_STATUS);
+
+        LocalDateTime now = LocalDateTime.now(visitClock).withNano(0);
+        if (!request.getDate().equals(now.toLocalDate()))
+            throw new CustomException(ErrorCode.INVALID_STATUS);
+        LocalDateTime time = requestedTime == null ? now : requestedTime;
+        if (!request.getDate().equals(time.toLocalDate()) || time.isAfter(now))
+            throw new CustomException(ErrorCode.INVALID_INPUT);
+
+        visit.checkin(time);
+        if (request.getStatus() == RequestStatus.CONFIRMED)
+            requestService.changeStatus(request.getId(), RequestStatus.CONFIRMED, RequestStatus.IN_PROGRESS);
+        return new CheckinResponse(visit.getId(), visit.getStartedAt());
+    }
+
+    private LockedVisit loadForUpdate(Long visitId, Long actorId) {
+        accessPolicy.requireAuthenticated(actorId);
+        Long requestId = visitRepository.findRequestIdByVisitId(visitId)
+                .orElseThrow(() -> new CustomException(ErrorCode.VISIT_NOT_FOUND));
+        Request request = requestService.getForUpdate(requestId);
+        Visit visit = visitRepository.findByIdForUpdate(visitId)
+                .orElseThrow(() -> new CustomException(ErrorCode.VISIT_NOT_FOUND));
+        accessPolicy.requireVolunteer(visit, actorId);
+        return new LockedVisit(visit, request);
+    }
+
+    private void requireActiveRequest(Request request) {
+        if (request.getStatus() == RequestStatus.RECRUITING || request.getStatus() == RequestStatus.CANCELED)
+            throw new CustomException(ErrorCode.INVALID_STATUS);
+    }
+
+    private record LockedVisit(Visit visit, Request request) {}
 }
