@@ -1,0 +1,71 @@
+/*
+ * 같이가요 시안(11/4)에 맞춘 공통 모양.
+ * index.css 의 기본 모양 위에 덮어써요. 값은 시안 .dc.html 의 인라인 스타일에서 그대로 가져왔어요.
+ */
+:root {
+  --line-soft: #f0e4db;
+  --field-line: #d9cdc3;
+  --chip-gray-bg: #f3ede8;
+  --chip-gray-ink: #3c4744;
+}
+
+body { word-break: keep-all; }
+
+/* 화면: 시안에는 가짜 상태바가 없어요 */
+.screen { background: #fff; }
+.screen__body { padding: 4px 20px 28px; gap: 14px; }
+
+/* 글자 */
+.t-display { font-size: 26px; line-height: 1.4; }
+.t-h1 { font-size: 24px; line-height: 1.4; }
+.t-h2 { font-size: 18px; }
+.t-body { font-size: 16px; line-height: 1.55; }
+.t-sub { font-size: 15px; line-height: 1.6; }
+.t-caption { font-size: 13px; line-height: 1.55; }
+.t-label { font-size: 14px; font-weight: 700; color: var(--text-primary); }
+
+/* 버튼 */
+.btn { border-radius: 18px; height: 56px; font-size: 17px; }
+.btn--sm { height: 48px; font-size: 15px; border-radius: 18px; }
+.btn--secondary { background: #fff; color: var(--text-primary); box-shadow: inset 0 0 0 1.5px var(--field-line); }
+.btn--ghost { background: transparent; color: var(--text-secondary); box-shadow: none; height: 48px; font-size: 15px; }
+
+/* 칩 */
+.chip { padding: 4px 12px; font-size: 13px; }
+.chip--green { background: var(--brand-primary-soft); color: var(--primary-ink); }
+.chip--orange { background: var(--brand-accent-soft); color: var(--accent-ink); }
+.chip--gray { background: var(--chip-gray-bg); color: var(--chip-gray-ink); }
+
+.toggle-chip { min-height: 48px; padding: 0 16px; font-size: 15px; color: var(--text-primary); box-shadow: inset 0 0 0 1.5px var(--field-line); }
+.toggle-chip--on { background: var(--brand-primary-soft); color: var(--primary-ink); box-shadow: inset 0 0 0 2px var(--brand-primary); }
+.filter-chip { min-height: 40px; padding: 0 16px; font-size: 14px; box-shadow: inset 0 0 0 1.5px var(--field-line); color: var(--text-primary); }
+.filter-chip--on { background: var(--brand-primary); color: #fff; }
+
+/* 카드 */
+.card { border-radius: 24px; border-color: var(--line-default); padding: 18px; }
+.card--list { padding: 0; overflow: hidden; }
+.list-item { padding: 14px 16px; }
+.list-item + .list-item { border-top: 1px solid var(--line-soft); }
+.request-card { border-radius: 24px; padding: 16px 18px; gap: 8px; }
+.notice { border-radius: 16px; font-weight: 500; line-height: 1.55; }
+
+/* 입력칸 */
+.field { gap: 8px; }
+.field__box { min-height: 52px; border-radius: 16px; box-shadow: inset 0 0 0 1.5px var(--field-line); }
+.textarea { border-radius: 16px; box-shadow: inset 0 0 0 1.5px var(--field-line); border: 0; }
+
+/* 상단: 뒤로 48×48 + 제목 */
+.top-bar { min-height: 56px; margin: 0 -12px; gap: 2px; }
+.top-bar__back { width: 48px; height: 48px; justify-content: center; }
+
+/* 하단 메뉴: 시안의 72px 메뉴, 선택된 칸 위에 막대 */
+.tab-bar { height: 72px; padding: 0 0 8px; justify-content: stretch; border-top: 1px solid var(--line-soft); box-sizing: content-box; }
+.tab-bar__item { flex: 1; width: auto; height: 72px; justify-content: center; font-size: 13px; position: relative; }
+.tab-bar__item--active::before { content: ''; position: absolute; top: 0; width: 28px; height: 4px; border-radius: 2px; background: var(--brand-primary); }
+
+/* 바닥에 붙는 버튼 묶음 */
+.footer-cta { flex-shrink: 0; padding: 12px 20px 28px; display: flex; flex-direction: column; gap: 6px; background: #fff; }
+/* 청록 카드 안의 흰 버튼 */
+.btn--on-dark { background: #fff; color: var(--brand-primary); box-shadow: none; }
+/* 섹션 제목 옆 '전체보기' */
+.see-all { font-size: 14px; font-weight: 700; color: var(--brand-primary); min-height: 32px; display: flex; align-items: center; }

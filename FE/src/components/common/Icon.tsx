@@ -1,3 +1,4 @@
+import type React from 'react'
 // Figma에서 쓴 아이콘을 그대로 옮긴 24×24 라인 아이콘 세트
 const PATHS = {
   home: <path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z" />,
@@ -47,6 +48,15 @@ const PATHS = {
   ),
   back: <path d="m15 18-6-6 6-6" />,
   chev: <path d="m9 18 6-6-6-6" />,
+  down: <path d="M6 9l6 6 6-6" />,
+  users: (
+    <>
+      <circle cx="9" cy="8" r="3.5" />
+      <path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6" />
+      <circle cx="17.5" cy="9.5" r="2.5" />
+      <path d="M16 14.2c3 .3 5.5 2.4 5.5 5.8" />
+    </>
+  ),
   chevDown: <path d="m6 9 6 6 6-6" />,
   heart: <path d="M12 20s-7-4.5-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.5-7 10-7 10z" />,
   filter: <path d="M4 6h16M7 12h10M10 18h4" />,
@@ -123,9 +133,10 @@ type Props = {
   size?: number
   color?: string
   strokeWidth?: number
+  style?: React.CSSProperties
 }
 
-export function Icon({ name, size = 24, color = 'currentColor', strokeWidth = 2 }: Props) {
+export function Icon({ name, size = 24, color = 'currentColor', strokeWidth = 2, style }: Props) {
   return (
     <svg
       width={size}
@@ -137,7 +148,7 @@ export function Icon({ name, size = 24, color = 'currentColor', strokeWidth = 2 
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden="true"
-      style={{ flexShrink: 0 }}
+      style={{ flexShrink: 0, ...style }}
     >
       {PATHS[name]}
     </svg>

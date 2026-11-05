@@ -65,9 +65,9 @@ export function VolunteerHome() {
           </div>
           <span style={{ fontSize: 19, fontWeight: 700 }}>{active.hospitalName}</span>
           <span style={{ fontSize: 14 }}>{formatDate(active.date)}</span>
-          <Button variant="secondary" size="sm" to={`/volunteer/progress?visitId=${active.visitId}`}>
+          <Link className="btn btn--sm btn--on-dark" to={`/volunteer/progress?visitId=${active.visitId}`}>
             동행 시작하기
-          </Button>
+          </Link>
         </section>
       )}
 
