@@ -41,6 +41,7 @@ public class Visit extends BaseEntity {
 
     private LocalDateTime startedAt;
     private LocalDateTime endedAt;
+    private Integer recognizedMinutes;
 
     @Column(nullable = false)
     private boolean consent;
@@ -105,6 +106,15 @@ public class Visit extends BaseEntity {
                 ? item.withCompletion(done, time) : item).toList();
         recalculateStep();
         return true;
+    }
+
+    public void checkout(LocalDateTime time, int minutes) {
+        if (startedAt == null || endedAt != null || isApproved())
+            throw new CustomException(ErrorCode.INVALID_STATUS);
+        if (time == null || time.isBefore(startedAt) || minutes < 0 || minutes > 480 || minutes % 30 != 0)
+            throw new CustomException(ErrorCode.INVALID_INPUT);
+        endedAt = time;
+        recognizedMinutes = minutes;
     }
 
     public boolean hasMemo() {

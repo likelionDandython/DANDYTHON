@@ -9,6 +9,7 @@ import com.dandi.hospital.visit.dto.VisitCreateResponse;
 import com.dandi.hospital.visit.dto.CheckinResponse;
 import com.dandi.hospital.visit.dto.StepUpdateRequest;
 import com.dandi.hospital.visit.dto.StepUpdateResponse;
+import com.dandi.hospital.visit.dto.CheckoutResponse;
 import com.dandi.hospital.visit.entity.Visit;
 import com.dandi.hospital.visit.repository.VisitRepository;
 import com.dandi.hospital.volunteer.entity.Volunteer;
@@ -29,6 +30,7 @@ public class VisitService {
     private final VolunteerService volunteerService;
     private final VisitAccessPolicy accessPolicy;
     private final Clock visitClock;
+    private final RecognizedMinutesCalculator minutesCalculator;
 
     @Transactional
     public VisitCreateResponse create(Request request, Volunteer volunteer) {
@@ -92,6 +94,30 @@ public class VisitService {
         Visit visit = locked.visit();
         visit.updateStep(update.step(), update.done(), LocalDateTime.now(visitClock).withNano(0));
         return new StepUpdateResponse(visit.getId(), visit.getStep());
+    }
+
+    @Transactional
+    public CheckoutResponse checkout(Long visitId, Long actorId, LocalDateTime requestedTime) {
+        LockedVisit locked = loadForUpdate(visitId, actorId);
+        Visit visit = locked.visit();
+        Request request = locked.request();
+        requireActiveRequest(request);
+        if (visit.getEndedAt() != null)
+            return CheckoutResponse.from(visit);
+        if (request.getStatus() != RequestStatus.IN_PROGRESS || visit.getStartedAt() == null)
+            throw new CustomException(ErrorCode.INVALID_STATUS);
+
+        LocalDateTime now = LocalDateTime.now(visitClock).withNano(0);
+        LocalDateTime time = requestedTime == null ? now : requestedTime;
+        if (time.isAfter(now))
+            throw new CustomException(ErrorCode.INVALID_INPUT);
+        visit.checkout(time, minutesCalculator.calculate(visit.getStartedAt(), time));
+
+        boolean allEnded = visitRepository.findAllByRequestIdForUpdate(request.getId()).stream()
+                .allMatch(participant -> participant.getEndedAt() != null);
+        if (allEnded)
+            requestService.changeStatus(request.getId(), RequestStatus.IN_PROGRESS, RequestStatus.COMPLETED);
+        return CheckoutResponse.from(visit);
     }
 
     private LockedVisit loadForUpdate(Long visitId, Long actorId) {
