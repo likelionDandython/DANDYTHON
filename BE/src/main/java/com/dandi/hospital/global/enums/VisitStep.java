@@ -1,5 +1,5 @@
 package com.dandi.hospital.global.enums;
 
 public enum VisitStep {
-    MEET, RECEPTION, TREATMENT, PAYMENT, PHARMACY, SEE_OFF
+    MEET, WHEELCHAIR_RENTAL, RECEPTION, TREATMENT, PAYMENT, PHARMACY, SEE_OFF
 }

@@ -5,6 +5,8 @@ import com.dandi.hospital.global.enums.GenderPref;
 import com.dandi.hospital.global.enums.MeetPlaceType;
 import com.dandi.hospital.global.enums.Need;
 import com.dandi.hospital.global.enums.RequestStatus;
+import com.dandi.hospital.global.exception.CustomException;
+import com.dandi.hospital.global.exception.ErrorCode;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -71,6 +73,14 @@ public class Request extends BaseEntity {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private RequestStatus status; // 요청 상태
+
+    public void changeStatus(RequestStatus expected, RequestStatus next) {
+        if (expected == null || next == null)
+            throw new CustomException(ErrorCode.INVALID_INPUT);
+        if (status != expected)
+            throw new CustomException(ErrorCode.INVALID_STATUS);
+        status = next;
+    }
 
     @Builder
     private Request(Long guardianId, Long seniorId, Long hospitalId, LocalDate date,
