@@ -34,17 +34,14 @@ public class ApplicationService {
         Request request = requestRepository.findById(requestId)
                 .orElseThrow(() -> new CustomException(ErrorCode.REQUEST_NOT_FOUND));
 
-        // 3. 모집 중인 요청인지 확인
-        // 내가 등록한 요청인지 확인
+        // 3. 내가 등록한 요청인지 확인
         if (request.getGuardianId().equals(volunteerId)) {
             throw new CustomException(ErrorCode.OWN_REQUEST);
         }
 
-        // 4. 이미 신청했는지 확인 (취소한 신청은 제외)
-        boolean alreadyApplied = applicationRepository.existsByRequestIdAndVolunteerIdAndStatusNot(
-                requestId, volunteerId, ApplicationStatus.CANCELED);
-        if (alreadyApplied) {
-            throw new CustomException(ErrorCode.ALREADY_APPLIED);
+        // 4. 모집 중인 요청인지 확인
+        if (request.getStatus() != RequestStatus.RECRUITING) {
+            throw new CustomException(ErrorCode.INVALID_STATUS);
         }
 
         // 5. 신청 저장
