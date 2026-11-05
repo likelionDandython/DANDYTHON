@@ -21,6 +21,8 @@ import java.util.List;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Visit extends BaseEntity {
+    public static final int MAX_MEMO_LENGTH = 5000;
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -46,8 +48,13 @@ public class Visit extends BaseEntity {
     @Column(nullable = false)
     private boolean consent;
 
+    private LocalDateTime consentedAt;
+
     @Column(columnDefinition = "TEXT")
     private String memo;
+
+    @Column(nullable = false)
+    private long memoRevision;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
@@ -114,6 +121,24 @@ public class Visit extends BaseEntity {
             throw new CustomException(ErrorCode.INVALID_INPUT);
         endedAt = time;
         recognizedMinutes = minutes;
+    }
+
+    public void saveMemo(boolean agreed, String content, LocalDateTime time) {
+        if (startedAt == null || isApproved())
+            throw new CustomException(ErrorCode.INVALID_STATUS);
+        if (!agreed)
+            throw new CustomException(ErrorCode.CONSENT_REQUIRED);
+        if (content == null || content.isBlank() || content.length() > MAX_MEMO_LENGTH || time == null)
+            throw new CustomException(ErrorCode.INVALID_INPUT);
+
+        consent = true;
+        if (consentedAt == null)
+            consentedAt = time;
+        if (!content.equals(memo)) {
+            memo = content;
+            memoRevision++;
+            summaryStatus = SummaryStatus.NONE;
+        }
     }
 
     public boolean hasMemo() {
