@@ -44,7 +44,7 @@ export function VolunteerMemoWrite() {
 
   const submit = async () => {
     if (!consent) return setError('먼저 동행받는 분께 여쭤보고 동의를 체크해 주세요.')
-    if (memo.trim().length < 10) return setError('진료 메모를 조금 더 자세히 적어 주세요.')
+    if (memo.trim().length < 20) return setError('AI 요약을 위해 진료 메모를 20자 이상 적어 주세요.')
     const result = await run(async () => {
       await visitApi.saveMemo(visitId, true, memo.trim())
       return visitApi.createSummary(visitId)
@@ -204,12 +204,17 @@ export function VolunteerMemoWrite() {
       )}
 
       <label className="field">
-        <span className="t-label">진료 메모</span>
+        <span className="row row--between">
+          <span className="t-label">진료 메모</span>
+          <span className="t-caption" style={{ color: memo.trim().length >= 20 ? 'var(--primary-ink)' : 'var(--text-secondary)' }}>
+            {memo.trim().length}자 / 최소 20자
+          </span>
+        </span>
         <textarea
           className="textarea"
           disabled={!consent}
           style={{ minHeight: 140, opacity: consent ? 1 : 0.5 }}
-          placeholder={consent ? '의사 선생님 말씀을 들은 그대로 적어 주세요.' : '동의를 체크하면 쓸 수 있어요.'}
+          placeholder={consent ? '의사 선생님 말씀을 들은 그대로 20자 이상 적어 주세요.' : '동의를 체크하면 쓸 수 있어요.'}
           value={memo}
           onChange={(e) => setMemo(e.target.value)}
         />

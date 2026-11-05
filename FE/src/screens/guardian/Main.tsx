@@ -22,8 +22,10 @@ import { ModeSwitchButton, ModeSwitchCard } from '../../components/common/ModeSw
 import { CharacterAvatar, CharacterPair } from '../../components/common/Character'
 import { EmptyState, Status } from '../../components/common/States'
 import { useAuth } from '../../auth/AuthContext'
+import { HometownBadge } from '../../components/common/HometownBadge'
 import { useAction, useApi } from '../../hooks/useApi'
 import { formatDate, formatDateTime, hhmm, todayString } from '../../lib/format'
+import { isHometownNeighbor } from '../../lib/hometown'
 
 const tabs = <TabBar tabs={GUARDIAN_TABS} />
 
@@ -412,6 +414,12 @@ export function GuardianConfirmed() {
                   <span className="row" style={{ gap: 8, color: 'var(--primary-ink)' }}>
                     <Icon name="shield" size={20} />
                     재학 인증
+                  </span>
+                )}
+                {isHometownNeighbor(p.hometown, d.senior.region) && (
+                  <span className="row" style={{ gap: 8 }}>
+                    <HometownBadge />
+                    <span className="t-caption">고향 {p.hometown}</span>
                   </span>
                 )}
                 <span className="row" style={{ gap: 8 }}>

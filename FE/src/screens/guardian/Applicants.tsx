@@ -166,11 +166,13 @@ export function GuardianApplicantConfirm() {
   const [params] = useSearchParams()
   const applicationId = Number(params.get('applicationId')) || 0
   const navigate = useNavigate()
+  const detail = useApi(() => requestApi.detail(requestId), [requestId], !!requestId)
   const apps = useApi(() => applicationApi.listForRequest(requestId), [requestId], !!requestId)
   const act = useAction()
   const pending = (apps.data ?? []).filter((a) => a.status === 'PENDING')
   const a = pending.find((x) => x.applicationId === applicationId)
   const others = Math.max(pending.length - 1, 0)
+  const neighbor = isHometownNeighbor(a?.volunteer.hometown, detail.data?.senior.region)
 
   const accept = async () => {
     const r = await act.run(() => applicationApi.accept(applicationId))
@@ -206,6 +208,11 @@ export function GuardianApplicantConfirm() {
               {a.volunteer.school} {a.volunteer.major} {a.volunteer.grade}학년
               {a.volunteer.verified ? ' · 재학 인증' : ''}
             </p>
+            {neighbor && (
+              <div className="row" style={{ justifyContent: 'center', paddingTop: 2 }}>
+                <HometownBadge />
+              </div>
+            )}
           </section>
 
           <section className="point-list" aria-label="확정하면 달라지는 점">
