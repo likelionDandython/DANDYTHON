@@ -642,19 +642,14 @@ export function GuardianMy() {
           </div>
         ))}
       </div>
-      <span style={{ fontSize: 16, fontWeight: 700 }}>알림</span>
       <div className="card card--list">
-        <Link to="/guardian/notifications" className="list-item row--between" style={{ paddingRight: 12 }}>
-          <span className="row" style={{ gap: 12 }}>
-            <Icon name="bell" size={20} color="var(--brand-primary)" />
-            <span className="t-body t-bold">알림 목록</span>
-          </span>
-          <Icon name="chev" size={20} color="var(--icon-muted)" />
-        </Link>
         <Link to="/guardian/notifications/settings" className="list-item row--between" style={{ paddingRight: 12 }}>
           <span className="row" style={{ gap: 12 }}>
             <Icon name="gear" size={20} color="var(--brand-primary)" />
-            <span className="t-body t-bold">알림 설정</span>
+            <span className="col" style={{ gap: 2 }}>
+              <span className="t-body t-bold">알림 설정</span>
+              <span className="t-sub">받을 동행 소식을 골라요</span>
+            </span>
           </span>
           <Icon name="chev" size={20} color="var(--icon-muted)" />
         </Link>
