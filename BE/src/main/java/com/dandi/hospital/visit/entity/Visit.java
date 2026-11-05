@@ -26,7 +26,6 @@ public class Visit extends BaseEntity {
     @Column(name = "request_id", nullable = false)
     private Long requestId;
 
-    /** Volunteer 엔티티의 PK가 아니라 봉사자 계정의 User ID다. */
     @Column(name = "volunteer_id", nullable = false)
     private Long volunteerId;
 
@@ -44,6 +43,15 @@ public class Visit extends BaseEntity {
     @Column(nullable = false)
     private boolean consent;
 
+    @Column(columnDefinition = "TEXT")
+    private String memo;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private SummaryStatus summaryStatus = SummaryStatus.NONE;
+
+    private LocalDateTime approvedAt;
+
     @Version
     private Long version;
 
@@ -58,5 +66,17 @@ public class Visit extends BaseEntity {
 
     public List<ChecklistItem> getChecklist() {
         return List.copyOf(checklist);
+    }
+
+    public boolean hasMemo() {
+        return memo != null && !memo.isBlank();
+    }
+
+    public boolean hasSummary() {
+        return summaryStatus == SummaryStatus.DONE || summaryStatus == SummaryStatus.FALLBACK;
+    }
+
+    public boolean isApproved() {
+        return approvedAt != null;
     }
 }

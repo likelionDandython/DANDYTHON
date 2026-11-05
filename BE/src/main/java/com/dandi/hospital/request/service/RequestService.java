@@ -16,6 +16,12 @@ public class RequestService {
 
     private final RequestRepository requestRepository;
 
+    @Transactional(readOnly = true)
+    public Request getById(Long requestId) {
+        return requestRepository.findById(requestId)
+                .orElseThrow(() -> new CustomException(ErrorCode.REQUEST_NOT_FOUND));
+    }
+
     /** C의 Visit 생성과 B의 수락 처리가 같은 요청 행 잠금을 사용하도록 제공한다. */
     @Transactional
     public Request getForVisitCreation(Long requestId) {
