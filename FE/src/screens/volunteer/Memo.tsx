@@ -30,6 +30,7 @@ export function VolunteerMemoWrite() {
   const name = detail.data?.senior.name
   const self = detail.data?.targetType === 'SELF'
   const [consent, setConsent] = useState(false)
+  const [consentModalOpen, setConsentModalOpen] = useState(false)
   const [memo, setMemo] = useState('')
   const [slow, setSlow] = useState(false)
   const { pending, error, run, setError } = useAction()
@@ -85,11 +86,16 @@ export function VolunteerMemoWrite() {
         </div>
       </section>
 
+      <div className="notice notice--info row" style={{ gap: 8, padding: '10px 14px', fontSize: 13 }}>
+        <Icon name="shield" size={18} />
+        <span>진료실에 함께 들어갈 때는 의료진께 먼저 양해를 구해 주세요.</span>
+      </div>
+
       <button
         type="button"
         role="checkbox"
         aria-checked={consent}
-        onClick={() => setConsent(!consent)}
+        onClick={() => (consent ? setConsent(false) : setConsentModalOpen(true))}
         className="row"
         style={{
           gap: 14,
@@ -104,11 +110,98 @@ export function VolunteerMemoWrite() {
         <span className="check__box" style={{ background: consent ? 'var(--brand-primary)' : '#fff', boxShadow: consent ? 'none' : 'inset 0 0 0 2px var(--line-default)' }}>
           {consent && <Icon name="check" size={14} color="#fff" strokeWidth={3} />}
         </span>
-        <span className="col" style={{ gap: 2 }}>
-          <span className="t-body t-bold">동행받는 분이 동의하셨어요</span>
-          <span className="t-caption">동의를 받아야 메모를 저장할 수 있어요.</span>
+        <span className="col fill" style={{ gap: 2 }}>
+          <span className="t-body t-bold">{consent ? '동행받는 분이 직접 동의하셨어요' : '동행받는 분 동의 받기 (큰 글씨 화면)'}</span>
+          <span className="t-caption">
+            {consent ? '이제 아래에 진료 메모를 작성할 수 있어요.' : '누르면 동행받는 분이 직접 누르실 수 있는 큰 글씨 동의 창이 열려요.'}
+          </span>
         </span>
       </button>
+
+      {consentModalOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="elder-consent-title"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 100,
+            background: 'rgba(24, 34, 32, 0.6)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 20,
+          }}
+          onClick={() => setConsentModalOpen(false)}
+        >
+          <div
+            className="col"
+            style={{
+              width: '100%',
+              maxWidth: 360,
+              background: '#fff',
+              borderRadius: 28,
+              padding: '28px 22px 22px',
+              gap: 18,
+              boxShadow: '0 20px 48px rgba(0,0,0,0.22)',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="col" style={{ alignItems: 'center', textAlign: 'center', gap: 10 }}>
+              <Character who="elder" size={84} />
+              <span className="chip chip--green" style={{ fontSize: 14, padding: '6px 14px' }}>
+                동행받는 분 직접 확인
+              </span>
+              <h2 id="elder-consent-title" style={{ margin: 0, fontSize: 25, fontWeight: 800, lineHeight: 1.4, letterSpacing: '-0.02em' }}>
+                {name ? `${name} 님,` : '어르신,'}
+                <br />
+                오늘 진료 내용을 정리해서
+                <br />
+                {self ? '보내 드려도 될까요?' : '가족분께 전해 드려도 될까요?'}
+              </h2>
+            </div>
+
+            <div
+              className="col"
+              style={{
+                gap: 8,
+                padding: '16px 18px',
+                borderRadius: 20,
+                background: 'var(--bg-canvas, #FBF8F4)',
+                fontSize: 20,
+                lineHeight: 1.55,
+                fontWeight: 500,
+              }}
+            >
+              <span>· 의사 선생님 말씀과 약 안내만 적어요.</span>
+              <span>· 성함과 연락처는 외부에 보내지 않아요.</span>
+            </div>
+
+            <div className="col" style={{ gap: 10, paddingTop: 4 }}>
+              <button
+                type="button"
+                className="btn btn--primary"
+                style={{ minHeight: 62, fontSize: 21, fontWeight: 800, borderRadius: 20 }}
+                onClick={() => {
+                  setConsent(true)
+                  setConsentModalOpen(false)
+                }}
+              >
+                네, 동의합니다
+              </button>
+              <button
+                type="button"
+                className="btn btn--ghost"
+                style={{ minHeight: 52, fontSize: 18, fontWeight: 600 }}
+                onClick={() => setConsentModalOpen(false)}
+              >
+                나중에 할게요
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <label className="field">
         <span className="t-label">진료 메모</span>
