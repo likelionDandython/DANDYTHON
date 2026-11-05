@@ -13,6 +13,8 @@ import com.dandi.hospital.visit.dto.MemoSaveResponse;
 import com.dandi.hospital.visit.service.VisitMemoService;
 import com.dandi.hospital.visit.service.VisitQueryService;
 import com.dandi.hospital.visit.service.VisitService;
+import com.dandi.hospital.visit.dto.SummaryResponse;
+import com.dandi.hospital.visit.service.VisitSummaryService;
 import lombok.RequiredArgsConstructor;
 import jakarta.validation.Valid;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -25,6 +27,7 @@ public class VisitController {
     private final VisitQueryService visitQueryService;
     private final VisitService visitService;
     private final VisitMemoService visitMemoService;
+    private final VisitSummaryService visitSummaryService;
 
     @GetMapping("/{visitId}")
     public ApiResponse<VisitResponse> getVisit(
@@ -52,6 +55,12 @@ public class VisitController {
             @PathVariable Long visitId, @AuthenticationPrincipal LoginUser user,
             @Valid @RequestBody MemoSaveRequest request) {
         return ApiResponse.ok(visitMemoService.save(visitId, user == null ? null : user.id(), request));
+    }
+
+    @PostMapping("/{visitId}/summary")
+    public ApiResponse<SummaryResponse> generateSummary(
+            @PathVariable Long visitId, @AuthenticationPrincipal LoginUser user) {
+        return ApiResponse.ok(visitSummaryService.generate(visitId, user == null ? null : user.id()));
     }
 
     @PostMapping("/{visitId}/checkout")
