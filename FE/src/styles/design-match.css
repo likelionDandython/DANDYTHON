@@ -69,3 +69,6 @@ body { word-break: keep-all; }
 .btn--on-dark { background: #fff; color: var(--brand-primary); box-shadow: none; }
 /* 섹션 제목 옆 '전체보기' */
 .see-all { font-size: 14px; font-weight: 700; color: var(--brand-primary); min-height: 32px; display: flex; align-items: center; }
+
+.notice--info{background:#DDF3EC;color:#3c2a25;font-weight:500}
+.notice--info svg{color:#0E5F56}

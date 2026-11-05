@@ -474,7 +474,7 @@ export function GuardianReport() {
     ? [
         ['calendar', '다음 진료', sum.nextVisit],
         ['pill', '처방약', sum.medication],
-        ['doc', '챙겨야 할 일', sum.guardianTodo.join(' / ')],
+        ['user', '챙겨야 할 일', sum.guardianTodo.join(' / ')],
       ]
     : []
 
@@ -486,12 +486,25 @@ export function GuardianReport() {
   }
 
   return (
-    <Screen>
+    <Screen
+      cta={
+        <>
+          {canApprove && (
+            <Button onClick={doApprove} disabled={approve.pending}>
+              {approve.pending ? '승인 중…' : '봉사시간 승인하기'}
+            </Button>
+          )}
+          <Button variant="ghost" to="/guardian/apply">
+            다음 동행 신청하기
+          </Button>
+        </>
+      }
+    >
       <TopBar title="오늘 진료 기록" />
       {!requestId && <ErrorText>동행 기록에서 들어와 주세요.</ErrorText>}
       <Status loading={loading || summary.loading} error={error ?? (v?.hasSummary === false ? null : summary.error)} />
       {v && (
-        <div className="col" style={{ gap: 6, alignItems: 'flex-start' }}>
+        <div className="col" style={{ gap: 8, alignItems: 'flex-start', padding: '0 4px' }}>
           {v.endedAt && <Chip>{`귀가 완료 ${hhmm(v.endedAt)}`}</Chip>}
           <h1 className="t-h1">
             {detail.data?.senior.name}님 동행
@@ -502,14 +515,14 @@ export function GuardianReport() {
       )}
       {v && v.hasSummary === false && <p className="t-body">아직 봉사자가 진료 요약을 작성하지 않았어요.</p>}
       {sum && (
-        <div className="card" style={{ gap: 8 }}>
-          <span className="t-bold t-primary" style={{ fontSize: 13 }}>
+        <div className="card" style={{ gap: 10 }}>
+          <span className="t-bold" style={{ fontSize: 14, color: 'var(--brand-primary-ink, #0E5F56)' }}>
             진료 내용
           </span>
           {sum.todayPoints.map((p) => (
             <p key={p} className="t-body">· {p}</p>
           ))}
-          <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{sum.disclaimer}</span>
+          <span style={{ fontSize: 13, lineHeight: 1.55, color: 'var(--text-secondary)' }}>{sum.disclaimer || '이 요약은 봉사자 메모를 정리한 것이에요. 정확한 내용은 의료진에게 확인해 주세요.'}</span>
         </div>
       )}
       {s?.status === 'FALLBACK' && (
@@ -522,12 +535,14 @@ export function GuardianReport() {
         </div>
       )}
       {facts.length > 0 && (
-        <div className="card card--list">
-          {facts.map(([ic, k, val]) => (
-            <div key={k} className="list-item">
-              <Icon name={ic} size={20} color="var(--brand-primary)" />
-              <div className="col">
-                <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-secondary)' }}>{k}</span>
+        <div className="card" style={{ padding: '4px 18px', gap: 0 }}>
+          {facts.map(([ic, k, val], n) => (
+            <div key={k} className="row" style={{ gap: 12, alignItems: 'flex-start', padding: '14px 0', borderBottom: n < facts.length - 1 ? '1px solid var(--line-soft)' : 'none' }}>
+              <span style={{ width: 36, height: 36, flexShrink: 0, borderRadius: '50%', background: 'var(--brand-primary-soft, #DDF3EC)', color: '#0E5F56', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Icon name={ic} size={20} />
+              </span>
+              <div className="col" style={{ gap: 2 }}>
+                <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{k}</span>
                 <span className="t-body t-bold">{val}</span>
               </div>
             </div>
@@ -536,20 +551,16 @@ export function GuardianReport() {
       )}
       {(canApprove || approved || v?.approved) && (
         <>
-          {canApprove && <Field label="봉사자에게 감사 메시지 (선택)" value={thanks} onChange={(e) => setThanks(e.target.value)} />}
+          {canApprove && (
+            <label className="field">
+              <span className="t-label">봉사자에게 감사 메시지 (선택)</span>
+              <textarea className="textarea" rows={3} placeholder="고마운 마음을 전해 보세요." value={thanks} onChange={(e) => setThanks(e.target.value)} />
+            </label>
+          )}
           <ErrorText>{approve.error}</ErrorText>
           {(approved || v?.approved) && <p className="t-caption t-accent t-medium">봉사시간을 승인했어요.</p>}
         </>
       )}
-      <Spacer />
-      {canApprove && (
-        <Button onClick={doApprove} disabled={approve.pending}>
-          {approve.pending ? '승인 중…' : '봉사시간 승인하기'}
-        </Button>
-      )}
-      <Button variant="ghost" to="/guardian/apply">
-        다음 동행 신청하기
-      </Button>
     </Screen>
   )
 }
@@ -630,6 +641,23 @@ export function GuardianMy() {
             <Icon name="chev" size={20} color="var(--icon-muted)" />
           </div>
         ))}
+      </div>
+      <span style={{ fontSize: 16, fontWeight: 700 }}>알림</span>
+      <div className="card card--list">
+        <Link to="/guardian/notifications" className="list-item row--between" style={{ paddingRight: 12 }}>
+          <span className="row" style={{ gap: 12 }}>
+            <Icon name="bell" size={20} color="var(--brand-primary)" />
+            <span className="t-body t-bold">알림 목록</span>
+          </span>
+          <Icon name="chev" size={20} color="var(--icon-muted)" />
+        </Link>
+        <Link to="/guardian/notifications/settings" className="list-item row--between" style={{ paddingRight: 12 }}>
+          <span className="row" style={{ gap: 12 }}>
+            <Icon name="gear" size={20} color="var(--brand-primary)" />
+            <span className="t-body t-bold">알림 설정</span>
+          </span>
+          <Icon name="chev" size={20} color="var(--icon-muted)" />
+        </Link>
       </div>
       <Button
         variant="ghost"

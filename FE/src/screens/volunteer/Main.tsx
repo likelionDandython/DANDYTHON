@@ -11,7 +11,7 @@ import { Screen, Spacer, TopBar } from '../../components/common/Layout'
 import { TabBar, VOLUNTEER_TABS } from '../../components/common/TabBar'
 import { ModeSwitchButton, ModeSwitchCard } from '../../components/common/ModeSwitch'
 import { EmptyState, Status } from '../../components/common/States'
-import { CharacterAvatar } from '../../components/common/Character'
+import { CharacterAvatar, CharacterPair } from '../../components/common/Character'
 import { RequestCard } from '../../components/volunteer/RequestCard'
 import { useAuth } from '../../auth/AuthContext'
 import { useAction, useApi } from '../../hooks/useApi'
@@ -142,7 +142,15 @@ export function VolunteerRequestDetail() {
   }
 
   return (
-    <Screen>
+    <Screen
+      cta={
+        r ? (
+          <Button onClick={submit} disabled={apply.pending || applied || mine || !session?.profileCompleted || r.status !== 'RECRUITING'}>
+            {mine ? '내 요청이에요' : applied ? '신청 완료' : r.status !== 'RECRUITING' ? '모집이 끝났어요' : apply.pending ? '신청 중…' : '이 동행 맡을게요'}
+          </Button>
+        ) : undefined
+      }
+    >
       <TopBar title="동행 요청 상세" />
       {!requestId && <ErrorText>요청을 선택해 주세요. (요청 목록에서 들어와요)</ErrorText>}
       <Status loading={detail.loading} error={detail.error} />
@@ -179,9 +187,9 @@ export function VolunteerRequestDetail() {
             )}
           </div>
           {r.meetAddress === null && (
-            <div className="notice">
-              <Icon name="lock" size={20} />
-              동행이 확정되면 상세 주소와 연락처가 공개돼요
+            <div className="notice notice--info">
+              <Icon name="info" size={20} />
+              동행이 확정되면 상세 주소와 연락처가 공개돼요.
             </div>
           )}
           {mine && (
@@ -203,15 +211,11 @@ export function VolunteerRequestDetail() {
           {r.status === 'RECRUITING' && !applied && !mine && session?.profileCompleted && (
             <label className="field">
               <span className="t-label">요청한 분에게 전할 말 (선택)</span>
-              <textarea className="textarea" value={message} onChange={(e) => setMessage(e.target.value)} />
+              <textarea className="textarea" placeholder="천천히 걷는 걸 도와드릴게요." value={message} onChange={(e) => setMessage(e.target.value)} />
             </label>
           )}
           <ErrorText>{apply.error}</ErrorText>
           {applied && <p className="t-caption t-accent t-medium">신청했어요. 요청한 분이 수락하면 확정돼요.</p>}
-          <Spacer />
-          <Button onClick={submit} disabled={apply.pending || applied || mine || !session?.profileCompleted || r.status !== 'RECRUITING'}>
-            {mine ? '내 요청이에요' : applied ? '신청 완료' : r.status !== 'RECRUITING' ? '모집이 끝났어요' : apply.pending ? '신청 중…' : '이 동행 맡을게요'}
-          </Button>
         </>
       )}
     </Screen>
@@ -233,33 +237,42 @@ export function VolunteerAccepted() {
       ]
     : []
   return (
-    <Screen bodyStyle={{ paddingTop: 88, alignItems: 'center', gap: 14 }}>
-      <div className="circle-icon" style={{ width: 96, height: 96, background: 'var(--brand-primary)' }}>
-        <Icon name="check" size={48} color="#fff" strokeWidth={2.6} />
-      </div>
-      <div style={{ height: 8 }} />
-      <h1 className="t-h1 center" style={{ fontSize: 24 }}>
-        동행이 확정됐어요
-      </h1>
-      <p className="t-body center" style={{ color: 'var(--text-secondary)' }}>
-        요청한 분에게 봉사자 정보가 전달됐어요.
-      </p>
+    <Screen
+      bodyStyle={{ paddingTop: 56 }}
+      cta={
+        <>
+          <Button to="/volunteer/home">일정 확인하기</Button>
+          <Button variant="ghost" to="/volunteer/home">
+            홈으로
+          </Button>
+          {r && (
+            <Button variant="ghost" to="/volunteer/my">
+              신청 취소하기
+            </Button>
+          )}
+        </>
+      }
+    >
+      <section className="col" style={{ gap: 10, alignItems: 'center', textAlign: 'center', padding: '22px 20px', borderRadius: 26, background: 'var(--brand-primary-soft)' }}>
+        <CharacterPair width={200} />
+        <h1 className="t-display">동행이 확정됐어요</h1>
+        <p className="t-sub" style={{ color: 'var(--chip-gray-ink)' }}>
+          요청한 분에게 봉사자 정보가 전달됐어요.
+        </p>
+      </section>
       <Status loading={detail.loading} error={detail.error} />
       {rows.length > 0 && (
-        <div className="card" style={{ width: '100%', gap: 10 }}>
+        <section className="card" style={{ gap: 12, padding: '16px 18px' }}>
           {rows.map(([k, v]) => (
-            <div key={k} className="row row--between" style={{ fontSize: 14 }}>
+            <div key={k} className="row row--between" style={{ gap: 12, fontSize: 15 }}>
               <span style={{ color: 'var(--text-secondary)' }}>{k}</span>
-              <span className="t-bold">{v}</span>
+              <span className="t-bold" style={{ textAlign: 'right' }}>
+                {v}
+              </span>
             </div>
           ))}
-        </div>
+        </section>
       )}
-      <Spacer />
-      <Button to="/volunteer/home">일정 확인하기</Button>
-      <Button variant="ghost" to="/volunteer/home">
-        홈으로
-      </Button>
     </Screen>
   )
 }
@@ -312,13 +325,15 @@ export function VolunteerProgress() {
         <Status loading={visit.loading || apps.loading} error={visit.error ?? apps.error} />
         {v && (
           <>
-            <div className="row row--between">
-              <div className="col" style={{ gap: 2 }}>
-                <span style={{ fontSize: 19, fontWeight: 700 }}>{d ? `${d.senior.name} 님 ${v.endedAt ? '동행 완료' : v.startedAt ? '동행 중' : '동행 준비'}` : '동행'}</span>
-                <span className="t-sub">{d ? `${d.hospital.name} · ${d.department}` : ''}</span>
+            <section className="row row--between" style={{ gap: 12, padding: '18px 20px', borderRadius: 24, background: 'var(--brand-primary-soft)', alignItems: 'flex-start' }}>
+              <div className="col" style={{ gap: 4 }}>
+                <span style={{ fontSize: 20, fontWeight: 700 }}>{d ? `${d.senior.name} 님 ${v.endedAt ? '동행 완료' : v.startedAt ? '동행 중' : '동행 준비'}` : '동행'}</span>
+                <span style={{ fontSize: 14, color: 'var(--chip-gray-ink)' }}>{d ? `${d.hospital.name} · ${d.department}` : ''}</span>
               </div>
-              <Chip>{next ? next.label : v.endedAt ? '완료' : '마무리'}</Chip>
-            </div>
+              <span style={{ padding: '4px 12px', borderRadius: 999, background: 'var(--brand-primary)', color: '#fff', fontSize: 13, fontWeight: 700, whiteSpace: 'nowrap' }}>
+                {next ? next.label : v.endedAt ? '완료' : '마무리'}
+              </span>
+            </section>
             <ol className="card" style={{ gap: 0, margin: 0, listStyle: 'none' }}>
               {checklist.map((s, i) => {
                 const state = s.done ? 'done' : i === nextIdx ? 'now' : 'todo'
@@ -340,8 +355,8 @@ export function VolunteerProgress() {
                       )}
                     </div>
                     <div className="col" style={{ paddingBottom: i < checklist.length - 1 ? 8 : 0 }}>
-                      <span className="t-body" style={{ fontWeight: state === 'todo' ? 500 : 700, color: state === 'todo' ? 'var(--text-secondary)' : undefined }}>
-                        {s.label}
+                      <span className="t-body" style={{ fontWeight: state === 'todo' ? 500 : 700, color: state === 'todo' ? 'var(--text-secondary)' : state === 'now' ? 'var(--accent-ink)' : undefined }}>
+                        {state === 'done' ? `${s.label} 완료` : state === 'now' ? `${s.label} 중이에요` : s.label}
                       </span>
                       {s.step === 'MEET' && v.startedAt && <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{hhmm(v.startedAt)} 체크인</span>}
                       {s.step !== 'MEET' && s.completedAt && <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{hhmm(s.completedAt)}</span>}
@@ -350,7 +365,7 @@ export function VolunteerProgress() {
                 )
               })}
             </ol>
-            <div className="notice">
+            <div className="row" style={{ gap: 10, alignItems: 'flex-start', padding: '12px 14px', borderRadius: 16, background: 'var(--chip-gray-bg)', color: 'var(--chip-gray-ink)', fontSize: 14, lineHeight: 1.6 }}>
               <Icon name="won" size={20} />
               수납·약값·택시비는 동행받는 분이 직접 결제해요. 카드나 현금은 맡지 않아요.
             </div>
@@ -358,12 +373,13 @@ export function VolunteerProgress() {
             <Spacer />
             <div className="row" style={{ gap: 10 }}>
               <Button
-                variant="ghost"
+                variant="secondary"
                 style={{ width: 120 }}
                 disabled={!d?.guardian}
                 onClick={() => d?.guardian && (window.location.href = `tel:${d.guardian.phone}`)}
               >
-                요청자 연락
+                <Icon name="phone" size={20} />
+                요청자
               </Button>
               {v.endedAt ? (
                 <Button className="fill" to={`/volunteer/memo${v.hasSummary ? '/done' : ''}?visitId=${visitId}`}>
