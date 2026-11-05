@@ -1,9 +1,11 @@
 package com.dandi.hospital.request.service;
 
+import com.dandi.hospital.hospital.service.HospitalService;
 import com.dandi.hospital.request.dto.CreateRequestDto;
 import com.dandi.hospital.request.dto.CreateRequestResult;
 import com.dandi.hospital.request.entity.Request;
 import com.dandi.hospital.request.repository.RequestRepository;
+import com.dandi.hospital.senior.service.SeniorService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -13,9 +15,14 @@ import org.springframework.transaction.annotation.Transactional;
 public class RequestService {
 
     private final RequestRepository requestRepository;
+    private final SeniorService seniorService;
+    private final HospitalService hospitalService;
 
     @Transactional
     public CreateRequestResult create(Long guardianId, CreateRequestDto dto) {
+        seniorService.getOwnedSenior(dto.seniorId(), guardianId); // 없으면 404, 남의 어르신이면 403
+        hospitalService.getById(dto.hospitalId());                // 없으면 404
+
         Request request = Request.builder()
                 .guardianId(guardianId)
                 .seniorId(dto.seniorId())
