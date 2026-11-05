@@ -74,8 +74,7 @@ public class Visit extends BaseEntity {
     public void checkin(LocalDateTime time) {
         if (time == null)
             throw new CustomException(ErrorCode.INVALID_INPUT);
-        if (startedAt != null || endedAt != null
-                || checklist.stream().noneMatch(item -> item.step() == VisitStep.MEET))
+        if (startedAt != null || endedAt != null || checklist.stream().noneMatch(item -> item.step() == VisitStep.MEET))
             throw new CustomException(ErrorCode.INVALID_STATUS);
         checklist = checklist.stream()
                 .map(item -> item.step() == VisitStep.MEET

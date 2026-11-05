@@ -13,9 +13,8 @@ public class ChecklistFactory {
     public List<ChecklistItem> create(List<Need> needs) {
         List<ChecklistItem> items = new ArrayList<>();
         items.add(ChecklistItem.pending(VisitStep.MEET, "만남"));
-        if (needs != null && needs.contains(Need.WHEELCHAIR)) {
+        if (needs != null && needs.contains(Need.WHEELCHAIR))
             items.add(ChecklistItem.pending(VisitStep.WHEELCHAIR_RENTAL, "병원 입구 휠체어 대여"));
-        }
         items.add(ChecklistItem.pending(VisitStep.RECEPTION, "접수"));
         items.add(ChecklistItem.pending(VisitStep.TREATMENT, "진료·검사"));
         items.add(ChecklistItem.pending(VisitStep.PAYMENT, "수납"));
