@@ -89,6 +89,24 @@ public class Visit extends BaseEntity {
                 .findFirst().orElse(VisitStep.SEE_OFF);
     }
 
+    public boolean updateStep(VisitStep requestedStep, boolean done, LocalDateTime time) {
+        if (startedAt == null || endedAt != null || isApproved())
+            throw new CustomException(ErrorCode.INVALID_STATUS);
+        ChecklistItem target = checklist.stream().filter(item -> item.step() == requestedStep)
+                .findFirst().orElseThrow(() -> new CustomException(ErrorCode.INVALID_INPUT));
+        if (requestedStep == VisitStep.MEET && !done)
+            throw new CustomException(ErrorCode.INVALID_STATUS);
+        if (target.done() == done)
+            return false;
+        if (done && (time == null || time.isBefore(startedAt)))
+            throw new CustomException(ErrorCode.INVALID_INPUT);
+
+        checklist = checklist.stream().map(item -> item.step() == requestedStep
+                ? item.withCompletion(done, time) : item).toList();
+        recalculateStep();
+        return true;
+    }
+
     public boolean hasMemo() {
         return memo != null && !memo.isBlank();
     }

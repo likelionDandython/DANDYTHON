@@ -7,6 +7,8 @@ import com.dandi.hospital.request.entity.Request;
 import com.dandi.hospital.request.service.RequestService;
 import com.dandi.hospital.visit.dto.VisitCreateResponse;
 import com.dandi.hospital.visit.dto.CheckinResponse;
+import com.dandi.hospital.visit.dto.StepUpdateRequest;
+import com.dandi.hospital.visit.dto.StepUpdateResponse;
 import com.dandi.hospital.visit.entity.Visit;
 import com.dandi.hospital.visit.repository.VisitRepository;
 import com.dandi.hospital.volunteer.entity.Volunteer;
@@ -78,6 +80,18 @@ public class VisitService {
         if (request.getStatus() == RequestStatus.CONFIRMED)
             requestService.changeStatus(request.getId(), RequestStatus.CONFIRMED, RequestStatus.IN_PROGRESS);
         return new CheckinResponse(visit.getId(), visit.getStartedAt());
+    }
+
+    @Transactional
+    public StepUpdateResponse updateStep(Long visitId, Long actorId, StepUpdateRequest update) {
+        LockedVisit locked = loadForUpdate(visitId, actorId);
+        if (update == null || update.step() == null || update.done() == null)
+            throw new CustomException(ErrorCode.INVALID_INPUT);
+        if (locked.request().getStatus() != RequestStatus.IN_PROGRESS)
+            throw new CustomException(ErrorCode.INVALID_STATUS);
+        Visit visit = locked.visit();
+        visit.updateStep(update.step(), update.done(), LocalDateTime.now(visitClock).withNano(0));
+        return new StepUpdateResponse(visit.getId(), visit.getStep());
     }
 
     private LockedVisit loadForUpdate(Long visitId, Long actorId) {

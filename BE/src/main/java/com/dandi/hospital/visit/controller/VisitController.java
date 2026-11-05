@@ -5,9 +5,12 @@ import com.dandi.hospital.global.security.LoginUser;
 import com.dandi.hospital.visit.dto.VisitResponse;
 import com.dandi.hospital.visit.dto.CheckinResponse;
 import com.dandi.hospital.visit.dto.VisitTimeRequest;
+import com.dandi.hospital.visit.dto.StepUpdateRequest;
+import com.dandi.hospital.visit.dto.StepUpdateResponse;
 import com.dandi.hospital.visit.service.VisitQueryService;
 import com.dandi.hospital.visit.service.VisitService;
 import lombok.RequiredArgsConstructor;
+import jakarta.validation.Valid;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -30,5 +33,12 @@ public class VisitController {
             @RequestBody(required = false) VisitTimeRequest request) {
         return ApiResponse.ok(visitService.checkin(visitId, user == null ? null : user.id(),
                 request == null ? null : request.time()));
+    }
+
+    @PatchMapping("/{visitId}/step")
+    public ApiResponse<StepUpdateResponse> updateStep(
+            @PathVariable Long visitId, @AuthenticationPrincipal LoginUser user,
+            @Valid @RequestBody StepUpdateRequest request) {
+        return ApiResponse.ok(visitService.updateStep(visitId, user == null ? null : user.id(), request));
     }
 }
