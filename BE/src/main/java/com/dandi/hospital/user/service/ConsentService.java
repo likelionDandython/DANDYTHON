@@ -22,12 +22,12 @@ public class ConsentService {
 
     public void requireSummaryReceiveConsent(Long requesterId) {
         if (!isAgreed(requesterId, ConsentItem.SUMMARY_RECEIVE))
-            throw new CustomException(ErrorCode.FORBIDDEN);
+            throw new CustomException(ErrorCode.SUMMARY_CONSENT_REQUIRED);
     }
 
     public void requireSummaryShareConsent(Long requesterId) {
         if (!isAgreed(requesterId, ConsentItem.SUMMARY_SHARE))
-            throw new CustomException(ErrorCode.FORBIDDEN);
+            throw new CustomException(ErrorCode.SUMMARY_CONSENT_REQUIRED);
     }
 
     private boolean isAgreed(Long userId, ConsentItem item) {

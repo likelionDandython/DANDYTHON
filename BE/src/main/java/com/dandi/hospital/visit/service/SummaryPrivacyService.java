@@ -1,7 +1,10 @@
 package com.dandi.hospital.visit.service;
 
 import com.dandi.hospital.hospital.service.HospitalService;
+import com.dandi.hospital.global.exception.CustomException;
+import com.dandi.hospital.global.exception.ErrorCode;
 import com.dandi.hospital.request.entity.Request;
+import com.dandi.hospital.request.entity.RequestTargetType;
 import com.dandi.hospital.senior.service.SeniorService;
 import com.dandi.hospital.user.entity.User;
 import com.dandi.hospital.user.service.UserService;
@@ -28,10 +31,15 @@ public class SummaryPrivacyService {
         addUser(identifiers, userService.getById(request.getGuardianId()));
         var volunteer = volunteerService.getByUserId(visit.getVolunteerId());
         addUser(identifiers, volunteer.getUser());
-        var senior = seniorService.getOwnedSenior(request.getSeniorId(), request.getGuardianId());
+        add(identifiers, volunteer.getSchool(), volunteer.getHometown());
+        if (request.getTargetType() == RequestTargetType.FAMILY) {
+            if (request.getSeniorId() == null)
+                throw new CustomException(ErrorCode.INVALID_INPUT);
+            var senior = seniorService.getOwnedSenior(request.getSeniorId(), request.getGuardianId());
+            add(identifiers, senior.getName(), senior.getPhone(), senior.getRegion());
+        }
         var hospital = hospitalService.getById(request.getHospitalId());
-        add(identifiers, volunteer.getSchool(), volunteer.getHometown(), senior.getName(), senior.getPhone(),
-                senior.getRegion(), request.getMeetAddress(), hospital.getName(), hospital.getAddress());
+        add(identifiers, request.getMeetAddress(), hospital.getName(), hospital.getAddress());
         return List.copyOf(identifiers);
     }
 

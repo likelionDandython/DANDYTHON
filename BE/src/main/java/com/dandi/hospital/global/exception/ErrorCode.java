@@ -34,6 +34,7 @@ public enum ErrorCode {
     // C: 동행·요약
     VISIT_NOT_FOUND(HttpStatus.NOT_FOUND, "동행 기록을 찾을 수 없습니다"),
     CONSENT_REQUIRED(HttpStatus.BAD_REQUEST, "동행받는 분의 현장 동의와 건강정보 처리 동의가 필요합니다"),
+    SUMMARY_CONSENT_REQUIRED(HttpStatus.FORBIDDEN, "진료 요약 수신·공유 동의가 필요합니다"),
     SUMMARY_NOT_FOUND(HttpStatus.NOT_FOUND, "아직 진료 요약이 없습니다");
 
     private final HttpStatus status;
