@@ -172,7 +172,7 @@ export function VolunteerRequestDetail() {
           </div>
           <div className="card" style={{ gap: 14 }}>
             <span style={{ fontSize: 16, fontWeight: 700 }}>
-              {r.senior.name} 님 ({r.senior.age}세)
+              {r.senior.name} 님{r.senior.age != null ? ` (${r.senior.age}세)` : ''}
             </span>
             <div className="row" style={{ gap: 6, flexWrap: 'wrap' }}>
               {r.needs.map((n) => (
