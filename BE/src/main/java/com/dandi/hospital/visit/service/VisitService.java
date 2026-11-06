@@ -123,6 +123,11 @@ public class VisitService {
 
     @Transactional
     public ApproveResponse approve(Long visitId, Long actorId) {
+        return approve(visitId, actorId, null);
+    }
+
+    @Transactional
+    public ApproveResponse approve(Long visitId, Long actorId, String thanks) {
         accessPolicy.requireAuthenticated(actorId);
         LockedVisit locked = loadForUpdate(visitId);
         Visit visit = locked.visit();
@@ -135,7 +140,7 @@ public class VisitService {
         if (request.getStatus() != RequestStatus.COMPLETED)
             throw new CustomException(ErrorCode.INVALID_STATUS);
 
-        visit.approve(actorId, LocalDateTime.now(visitClock).withNano(0));
+        visit.approve(actorId, LocalDateTime.now(visitClock).withNano(0), thanks);
         boolean allApproved = visitRepository.findAllByRequestIdForUpdate(request.getId()).stream()
                 .allMatch(Visit::isApproved);
         if (allApproved)

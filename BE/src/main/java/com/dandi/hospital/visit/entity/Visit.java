@@ -21,6 +21,8 @@ import java.util.List;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Visit extends BaseEntity {
+    public static final int MAX_THANKS_LENGTH = 1000;
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -56,6 +58,11 @@ public class Visit extends BaseEntity {
     private Integer approvedMinutes;
     private LocalDateTime approvedAt;
     private Long approvedBy;
+
+    @Column(length = MAX_THANKS_LENGTH)
+    private String thanks;
+
+    private LocalDateTime thanksCreatedAt;
 
     @Version
     private Long version;
@@ -118,15 +125,19 @@ public class Visit extends BaseEntity {
         recognizedMinutes = minutes;
     }
 
-    public void approve(Long requesterId, LocalDateTime time) {
+    public void approve(Long requesterId, LocalDateTime time, String message) {
         if (isApproved() || startedAt == null || endedAt == null || recognizedMinutes == null)
             throw new CustomException(ErrorCode.INVALID_STATUS);
         if (requesterId == null || time == null || time.isBefore(endedAt)
-                || recognizedMinutes < 0 || recognizedMinutes > 480 || recognizedMinutes % 30 != 0)
+                || recognizedMinutes < 0 || recognizedMinutes > 480 || recognizedMinutes % 30 != 0
+                || (message != null && message.length() > MAX_THANKS_LENGTH))
             throw new CustomException(ErrorCode.INVALID_INPUT);
+        String normalized = message == null ? null : message.strip();
         approvedMinutes = recognizedMinutes;
         approvedAt = time;
         approvedBy = requesterId;
+        thanks = normalized == null || normalized.isEmpty() ? null : normalized;
+        thanksCreatedAt = thanks == null ? null : time;
     }
 
     public boolean hasMemo() {
