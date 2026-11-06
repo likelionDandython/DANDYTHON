@@ -8,8 +8,14 @@ import com.dandi.hospital.visit.dto.VisitTimeRequest;
 import com.dandi.hospital.visit.dto.StepUpdateRequest;
 import com.dandi.hospital.visit.dto.StepUpdateResponse;
 import com.dandi.hospital.visit.dto.CheckoutResponse;
+import com.dandi.hospital.visit.dto.MemoSaveRequest;
+import com.dandi.hospital.visit.dto.MemoSaveResponse;
+import com.dandi.hospital.visit.service.VisitMemoService;
 import com.dandi.hospital.visit.service.VisitQueryService;
 import com.dandi.hospital.visit.service.VisitService;
+import com.dandi.hospital.visit.dto.SummaryResponse;
+import com.dandi.hospital.visit.service.VisitSummaryService;
+import com.dandi.hospital.visit.service.VisitSummaryQueryService;
 import lombok.RequiredArgsConstructor;
 import jakarta.validation.Valid;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -21,6 +27,9 @@ import org.springframework.web.bind.annotation.*;
 public class VisitController {
     private final VisitQueryService visitQueryService;
     private final VisitService visitService;
+    private final VisitMemoService visitMemoService;
+    private final VisitSummaryService visitSummaryService;
+    private final VisitSummaryQueryService visitSummaryQueryService;
 
     @GetMapping("/{visitId}")
     public ApiResponse<VisitResponse> getVisit(
@@ -41,6 +50,25 @@ public class VisitController {
             @PathVariable Long visitId, @AuthenticationPrincipal LoginUser user,
             @Valid @RequestBody StepUpdateRequest request) {
         return ApiResponse.ok(visitService.updateStep(visitId, user == null ? null : user.id(), request));
+    }
+
+    @PostMapping("/{visitId}/memo")
+    public ApiResponse<MemoSaveResponse> saveMemo(
+            @PathVariable Long visitId, @AuthenticationPrincipal LoginUser user,
+            @Valid @RequestBody MemoSaveRequest request) {
+        return ApiResponse.ok(visitMemoService.save(visitId, user == null ? null : user.id(), request));
+    }
+
+    @GetMapping("/{visitId}/summary")
+    public ApiResponse<SummaryResponse> getSummary(
+            @PathVariable Long visitId, @AuthenticationPrincipal LoginUser user) {
+        return ApiResponse.ok(visitSummaryQueryService.getSummary(visitId, user == null ? null : user.id()));
+    }
+
+    @PostMapping("/{visitId}/summary")
+    public ApiResponse<SummaryResponse> generateSummary(
+            @PathVariable Long visitId, @AuthenticationPrincipal LoginUser user) {
+        return ApiResponse.ok(visitSummaryService.generate(visitId, user == null ? null : user.id()));
     }
 
     @PostMapping("/{visitId}/checkout")

@@ -32,6 +32,10 @@ public class Request extends BaseEntity {
     @Column(nullable = false)
     private Long guardianId; // 요청을 올린 보호자
 
+    @Enumerated(EnumType.STRING)
+    @Column(length = 10)
+    private RequestTargetType targetType;
+
     @Column(nullable = false)
     private Long seniorId; // 동행할 어르신
 
@@ -74,6 +78,10 @@ public class Request extends BaseEntity {
     @Column(nullable = false, length = 20)
     private RequestStatus status; // 요청 상태
 
+    public RequestTargetType getTargetType() {
+        return targetType == null ? RequestTargetType.FAMILY : targetType;
+    }
+
     public void changeStatus(RequestStatus expected, RequestStatus next) {
         if (expected == null || next == null)
             throw new CustomException(ErrorCode.INVALID_INPUT);
@@ -86,8 +94,9 @@ public class Request extends BaseEntity {
     private Request(Long guardianId, Long seniorId, Long hospitalId, LocalDate date,
                     LocalTime meetTime, MeetPlaceType meetPlaceType, String meetAddress,
                     String department, List<Need> needs, String notes,
-                    int helpersNeeded, GenderPref genderPref) {
+                    int helpersNeeded, GenderPref genderPref, RequestTargetType targetType) {
         this.guardianId = guardianId;
+        this.targetType = targetType == null ? RequestTargetType.FAMILY : targetType;
         this.seniorId = seniorId;
         this.hospitalId = hospitalId;
         this.date = date;
