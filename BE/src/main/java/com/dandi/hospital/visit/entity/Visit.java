@@ -53,7 +53,9 @@ public class Visit extends BaseEntity {
     @Column(nullable = false, length = 20)
     private SummaryStatus summaryStatus = SummaryStatus.NONE;
 
+    private Integer approvedMinutes;
     private LocalDateTime approvedAt;
+    private Long approvedBy;
 
     @Version
     private Long version;
@@ -114,6 +116,17 @@ public class Visit extends BaseEntity {
             throw new CustomException(ErrorCode.INVALID_INPUT);
         endedAt = time;
         recognizedMinutes = minutes;
+    }
+
+    public void approve(Long requesterId, LocalDateTime time) {
+        if (isApproved() || startedAt == null || endedAt == null || recognizedMinutes == null)
+            throw new CustomException(ErrorCode.INVALID_STATUS);
+        if (requesterId == null || time == null || time.isBefore(endedAt)
+                || recognizedMinutes < 0 || recognizedMinutes > 480 || recognizedMinutes % 30 != 0)
+            throw new CustomException(ErrorCode.INVALID_INPUT);
+        approvedMinutes = recognizedMinutes;
+        approvedAt = time;
+        approvedBy = requesterId;
     }
 
     public boolean hasMemo() {

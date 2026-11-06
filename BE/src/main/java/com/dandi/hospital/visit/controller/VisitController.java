@@ -8,6 +8,7 @@ import com.dandi.hospital.visit.dto.VisitTimeRequest;
 import com.dandi.hospital.visit.dto.StepUpdateRequest;
 import com.dandi.hospital.visit.dto.StepUpdateResponse;
 import com.dandi.hospital.visit.dto.CheckoutResponse;
+import com.dandi.hospital.visit.dto.ApproveResponse;
 import com.dandi.hospital.visit.service.VisitQueryService;
 import com.dandi.hospital.visit.service.VisitService;
 import lombok.RequiredArgsConstructor;
@@ -41,6 +42,12 @@ public class VisitController {
             @PathVariable Long visitId, @AuthenticationPrincipal LoginUser user,
             @Valid @RequestBody StepUpdateRequest request) {
         return ApiResponse.ok(visitService.updateStep(visitId, user == null ? null : user.id(), request));
+    }
+
+    @PostMapping("/{visitId}/approve")
+    public ApiResponse<ApproveResponse> approve(
+            @PathVariable Long visitId, @AuthenticationPrincipal LoginUser user) {
+        return ApiResponse.ok(visitService.approve(visitId, user == null ? null : user.id()));
     }
 
     @PostMapping("/{visitId}/checkout")

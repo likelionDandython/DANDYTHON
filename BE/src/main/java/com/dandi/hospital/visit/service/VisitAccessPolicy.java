@@ -20,6 +20,12 @@ public class VisitAccessPolicy {
             throw new CustomException(ErrorCode.FORBIDDEN);
     }
 
+    public void requireRequester(Request request, Long actorId) {
+        requireAuthenticated(actorId);
+        if (!actorId.equals(request.getGuardianId()))
+            throw new CustomException(ErrorCode.FORBIDDEN);
+    }
+
     public void requireAuthenticated(Long actorId) {
         if (actorId == null)
             throw new CustomException(ErrorCode.UNAUTHORIZED);
