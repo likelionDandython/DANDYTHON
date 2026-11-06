@@ -45,13 +45,9 @@ public interface ApplicationRepository extends JpaRepository<Application, Long> 
     @Query("select a from Application a where a.id = :applicationId")
     Optional<Application> findByIdForUpdate(@Param("applicationId") Long applicationId);
 
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("select a from Application a where a.requestId = :requestId and a.status = :status order by a.id")
-    List<Application> findAllByRequestIdAndStatusForUpdate(@Param("requestId") Long requestId,
-                                                           @Param("status") ApplicationStatus status);
+    // 요청별 특정 상태의 신청 수 (정원 집계)
+    long countByRequestIdAndStatus(Long requestId, ApplicationStatus status);
 
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("select a from Application a where a.volunteerId = :volunteerId and a.status = :status order by a.id")
-    List<Application> findAllByVolunteerIdAndStatusForUpdate(@Param("volunteerId") Long volunteerId,
-                                                             @Param("status") ApplicationStatus status);
+    // 봉사자의 특정 상태 신청 목록 (일정 검사, 봉사자 잠금 후 사용)
+    List<Application> findAllByVolunteerIdAndStatus(Long volunteerId, ApplicationStatus status);
 }

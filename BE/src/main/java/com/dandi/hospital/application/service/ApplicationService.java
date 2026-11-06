@@ -23,6 +23,7 @@ import com.dandi.hospital.request.repository.RequestRepository;
 import com.dandi.hospital.volunteer.repository.VolunteerRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
@@ -121,10 +122,13 @@ public class ApplicationService {
      * - 수락할 때마다 동행 기록(Visit)을 만들어 visitId를 돌려줌
      * - 수락 인원이 helpersNeeded에 닿으면 요청을 CONFIRMED로 바꾸고 남은 대기 신청은 CLOSED 처리
      *
-     * 동시성: 요청 잠금 → 봉사자 잠금 순서로 잡고, 잠근 뒤에는 잠금 조회로 최신 상태만 읽음
-     *   (REPEATABLE_READ에서 일반 조회는 예전 스냅샷을 읽을 수 있기 때문)
+     * 동시성
+     * - 잠금은 "요청 → 봉사자" 두 개만, 항상 이 순서로 잡음 (다른 요청의 신청 행은 잠그지 않아 교착이 생기지 않음)
+     * - READ_COMMITTED로 실행해서, 잠금을 잡은 뒤의 일반 조회도 항상 최신 커밋을 읽음
+     *   · 같은 요청의 수락·취소는 요청 잠금으로 한 줄로 처리됨 → 정원 집계가 정확함
+     *   · 같은 봉사자의 수락은 봉사자 잠금으로 한 줄로 처리됨 → 일정 검사가 정확함
      */
-    @Transactional
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public AcceptResult accept(Long userId, Long applicationId) {
         // 1. 요청 번호만 먼저 확인 (엔티티를 미리 불러오지 않음)
         Long requestId = applicationRepository.findRequestIdById(applicationId)
@@ -149,13 +153,13 @@ public class ApplicationService {
             throw new CustomException(ErrorCode.INVALID_STATUS);
         }
 
-        // 6. 봉사자를 잠그고, 같은 날 다른 확정 동행이 있는지 최신 상태로 확인
-        //    (서로 다른 요청에서 같은 봉사자를 동시에 수락해도 한쪽만 성공)
+        // 6. 봉사자를 잠그고, 같은 날 다른 확정 동행이 있는지 확인
+        //    (봉사자 잠금으로 같은 봉사자의 수락이 한 줄로 처리되어 한쪽만 성공)
         Long volunteerUserId = application.getVolunteerId();
         volunteerRepository.findByUserIdForUpdate(volunteerUserId)
                 .orElseThrow(() -> new CustomException(ErrorCode.VOLUNTEER_NOT_FOUND));
         boolean conflict = applicationRepository
-                .findAllByVolunteerIdAndStatusForUpdate(volunteerUserId, ApplicationStatus.ACCEPTED)
+                .findAllByVolunteerIdAndStatus(volunteerUserId, ApplicationStatus.ACCEPTED)
                 .stream()
                 .filter(a -> !a.getRequestId().equals(request.getId()))
                 .map(a -> requestRepository.findById(a.getRequestId()).orElse(null))
@@ -171,13 +175,16 @@ public class ApplicationService {
         Visit visit = visitRepository.save(
                 Visit.create(request.getId(), volunteerUserId, checklistFactory.create(request.getNeeds())));
 
-        // 8. 정원이 차면 모집 마감 (수락 인원도 잠금 조회로 최신 상태를 셈)
-        int acceptedCount = applicationRepository
-                .findAllByRequestIdAndStatusForUpdate(request.getId(), ApplicationStatus.ACCEPTED)
-                .size();
-        if (acceptedCount >= request.getHelpersNeeded()) {
+        // 8. 정원이 차면 모집 마감 (요청 잠금 + READ_COMMITTED라 최신 수락 인원을 셈)
+        long acceptedCount = applicationRepository.countByRequestIdAndStatus(
+                request.getId(), ApplicationStatus.ACCEPTED);
+        if (acceptedCount > request.getHelpersNeeded()) {
+            // 정상이라면 일어날 수 없음: 혹시라도 정원을 넘으면 이번 수락을 되돌림
+            throw new CustomException(ErrorCode.INVALID_STATUS);
+        }
+        if (acceptedCount == request.getHelpersNeeded()) {
             request.changeStatus(RequestStatus.RECRUITING, RequestStatus.CONFIRMED);
-            applicationRepository.findAllByRequestIdAndStatusForUpdate(request.getId(), ApplicationStatus.PENDING)
+            applicationRepository.findAllByRequestIdAndStatus(request.getId(), ApplicationStatus.PENDING)
                     .forEach(a -> a.changeStatus(ApplicationStatus.PENDING, ApplicationStatus.CLOSED));
         }
 
@@ -224,9 +231,9 @@ public class ApplicationService {
      *   (정원이 차서 CLOSED 됐던 신청도 다시 대기 중으로 돌려 보호자가 다시 고를 수 있게 함)
      * - 수락된 신청을 동행일 2일 이내에 취소하면 lateCancel = true
      *
-     * 동시성: 수락과 같은 순서(요청 잠금 → 신청 다시 읽기)로 처리하고, 동행 기록도 잠금 조회로 읽음
+     * 동시성: 수락과 같은 요청 잠금으로 한 줄로 처리하고, READ_COMMITTED로 잠금 뒤 최신 상태를 읽음
      */
-    @Transactional
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public CancelApplicationResult cancel(Long userId, Long applicationId) {
         Long requestId = applicationRepository.findRequestIdById(applicationId)
                 .orElseThrow(() -> new CustomException(ErrorCode.APPLICATION_NOT_FOUND));
@@ -263,7 +270,7 @@ public class ApplicationService {
             // 확정됐던 요청은 다시 모집 중으로
             if (request.getStatus() == RequestStatus.CONFIRMED) {
                 request.changeStatus(RequestStatus.CONFIRMED, RequestStatus.RECRUITING);
-                applicationRepository.findAllByRequestIdAndStatusForUpdate(request.getId(), ApplicationStatus.CLOSED)
+                applicationRepository.findAllByRequestIdAndStatus(request.getId(), ApplicationStatus.CLOSED)
                         .forEach(a -> a.changeStatus(ApplicationStatus.CLOSED, ApplicationStatus.PENDING));
             }
 
