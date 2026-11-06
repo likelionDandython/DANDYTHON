@@ -23,6 +23,7 @@ import java.util.List;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Visit extends BaseEntity {
     public static final int MAX_THANKS_LENGTH = 1000;
+    public static final int MAX_MEMO_LENGTH = 5000;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -49,12 +50,24 @@ public class Visit extends BaseEntity {
     @Column(nullable = false)
     private boolean consent;
 
+    private LocalDateTime consentedAt;
+
     @Column(columnDefinition = "TEXT")
     private String memo;
+
+    @Column(nullable = false)
+    private long memoRevision;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private SummaryStatus summaryStatus = SummaryStatus.NONE;
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(columnDefinition = "json")
+    private SummaryContent summary;
+
+    private Long summaryMemoRevision;
+    private LocalDateTime summarizedAt;
 
     private Integer approvedMinutes;
     private LocalDateTime approvedAt;
@@ -141,8 +154,42 @@ public class Visit extends BaseEntity {
         thanksCreatedAt = thanks == null ? null : time;
     }
 
+    public void saveMemo(boolean agreed, String content, LocalDateTime time) {
+        if (startedAt == null || isApproved())
+            throw new CustomException(ErrorCode.INVALID_STATUS);
+        if (!agreed)
+            throw new CustomException(ErrorCode.CONSENT_REQUIRED);
+        if (content == null || content.isBlank() || content.length() > MAX_MEMO_LENGTH || time == null)
+            throw new CustomException(ErrorCode.INVALID_INPUT);
+
+        consent = true;
+        if (consentedAt == null)
+            consentedAt = time;
+        if (!content.equals(memo)) {
+            memo = content;
+            memoRevision++;
+            summaryStatus = SummaryStatus.NONE;
+            summary = null;
+            summaryMemoRevision = null;
+            summarizedAt = null;
+        }
+    }
+
     public boolean hasMemo() {
         return memo != null && !memo.isBlank();
+    }
+
+    public void saveSummary(long sourceRevision, SummaryContent content, LocalDateTime time) {
+        if (startedAt == null || isApproved() || memoRevision != sourceRevision)
+            throw new CustomException(ErrorCode.INVALID_STATUS);
+        if (!consent)
+            throw new CustomException(ErrorCode.CONSENT_REQUIRED);
+        if (!hasMemo() || time == null)
+            throw new CustomException(ErrorCode.INVALID_INPUT);
+        summary = content;
+        summaryStatus = content == null ? SummaryStatus.FALLBACK : SummaryStatus.DONE;
+        summaryMemoRevision = sourceRevision;
+        summarizedAt = time;
     }
 
     public boolean hasSummary() {
