@@ -1,6 +1,7 @@
 package com.dandi.hospital.application.controller;
 
 import com.dandi.hospital.application.dto.ApplyRequestDto;
+import com.dandi.hospital.application.dto.ApplicationItem;
 import com.dandi.hospital.application.dto.ApplyResult;
 import com.dandi.hospital.application.service.ApplicationService;
 import com.dandi.hospital.global.response.ApiResponse;
@@ -10,6 +11,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api")
@@ -25,5 +28,12 @@ public class ApplicationController {
             @PathVariable Long requestId,
             @Valid @RequestBody ApplyRequestDto dto) {
         return ApiResponse.ok(applicationService.apply(user.id(), requestId, dto));
+    }
+
+    @GetMapping("/requests/{requestId}/applications")
+    public ApiResponse<List<ApplicationItem>> applicants(
+            @AuthenticationPrincipal LoginUser user,
+            @PathVariable Long requestId) {
+        return ApiResponse.ok(applicationService.getApplicants(user.id(), requestId));
     }
 }
