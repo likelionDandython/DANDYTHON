@@ -17,7 +17,8 @@ import java.util.List;
 
 @Entity
 @Table(name = "visits", uniqueConstraints = @UniqueConstraint(
-        name = "uk_visits_request_volunteer", columnNames = {"request_id", "volunteer_id"}))
+        name = "uk_visits_request_volunteer", columnNames = {"request_id", "volunteer_id"}),
+        indexes = @Index(name = "idx_visits_volunteer_approved", columnList = "volunteer_id, approved_at"))
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Visit extends BaseEntity {
