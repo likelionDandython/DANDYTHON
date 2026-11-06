@@ -2,6 +2,8 @@ package com.dandi.hospital.application.entity;
 
 import com.dandi.hospital.global.entity.BaseEntity;
 import com.dandi.hospital.global.enums.ApplicationStatus;
+import com.dandi.hospital.global.exception.CustomException;
+import com.dandi.hospital.global.exception.ErrorCode;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -38,5 +40,12 @@ public class Application extends BaseEntity {
         this.volunteerId = volunteerId;
         this.message = message;
         this.status = ApplicationStatus.PENDING; // 처음 신청하면 대기 중
+    }
+
+    /** 상태 변경: 지금 상태가 expected일 때만 next로 바꿈 */
+    public void changeStatus(ApplicationStatus expected, ApplicationStatus next) {
+        if (status != expected)
+            throw new CustomException(ErrorCode.INVALID_STATUS);
+        status = next;
     }
 }

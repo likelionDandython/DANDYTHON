@@ -1,6 +1,7 @@
 package com.dandi.hospital.application.controller;
 
 import com.dandi.hospital.application.dto.ApplyRequestDto;
+import com.dandi.hospital.application.dto.AcceptResult;
 import com.dandi.hospital.application.dto.ApplicationItem;
 import com.dandi.hospital.application.dto.ApplyResult;
 import com.dandi.hospital.application.service.ApplicationService;
@@ -35,5 +36,12 @@ public class ApplicationController {
             @AuthenticationPrincipal LoginUser user,
             @PathVariable Long requestId) {
         return ApiResponse.ok(applicationService.getApplicants(user.id(), requestId));
+    }
+
+    @PostMapping("/applications/{applicationId}/accept")
+    public ApiResponse<AcceptResult> accept(
+            @AuthenticationPrincipal LoginUser user,
+            @PathVariable Long applicationId) {
+        return ApiResponse.ok(applicationService.accept(user.id(), applicationId));
     }
 }

@@ -1,6 +1,7 @@
 package com.dandi.hospital.application.service;
 
 import com.dandi.hospital.application.dto.ApplyRequestDto;
+import com.dandi.hospital.application.dto.AcceptResult;
 import com.dandi.hospital.application.dto.ApplicationItem;
 import com.dandi.hospital.application.dto.ApplicationItem.VolunteerSummary;
 import com.dandi.hospital.application.dto.ApplyResult;
@@ -11,6 +12,9 @@ import com.dandi.hospital.global.enums.RequestStatus;
 import com.dandi.hospital.global.exception.CustomException;
 import com.dandi.hospital.global.exception.ErrorCode;
 import com.dandi.hospital.request.entity.Request;
+import com.dandi.hospital.visit.entity.Visit;
+import com.dandi.hospital.visit.repository.VisitRepository;
+import com.dandi.hospital.visit.service.ChecklistFactory;
 import com.dandi.hospital.volunteer.entity.Volunteer;
 import com.dandi.hospital.request.repository.RequestRepository;
 import com.dandi.hospital.volunteer.repository.VolunteerRepository;
@@ -27,6 +31,8 @@ public class ApplicationService {
     private final ApplicationRepository applicationRepository;
     private final RequestRepository requestRepository;
     private final VolunteerRepository volunteerRepository;
+    private final VisitRepository visitRepository;
+    private final ChecklistFactory checklistFactory;
 
     @Transactional
     public ApplyResult apply(Long volunteerId, Long requestId, ApplyRequestDto dto) {
@@ -102,5 +108,56 @@ public class ApplicationService {
                 application.getCreatedAt(),
                 summary
         );
+    }
+
+    /**
+     * 신청 수락 (요청을 등록한 사람만)
+     * - 수락할 때마다 동행 기록(Visit)을 만들어 visitId를 돌려줌
+     * - 수락 인원이 helpersNeeded에 닿으면 요청을 CONFIRMED로 바꾸고 남은 대기 신청은 CLOSED 처리
+     */
+    @Transactional
+    public AcceptResult accept(Long userId, Long applicationId) {
+        // 1. 신청이 있는지 확인
+        Application application = applicationRepository.findById(applicationId)
+                .orElseThrow(() -> new CustomException(ErrorCode.APPLICATION_NOT_FOUND));
+
+        // 2. 요청을 잠그고 가져옴 (두 사람을 동시에 수락해도 정원이 넘지 않게)
+        Request request = requestRepository.findByIdForUpdate(application.getRequestId())
+                .orElseThrow(() -> new CustomException(ErrorCode.REQUEST_NOT_FOUND));
+
+        // 3. 요청을 등록한 사람인지 확인
+        if (!request.getGuardianId().equals(userId)) {
+            throw new CustomException(ErrorCode.FORBIDDEN);
+        }
+
+        // 4. 모집 중인 요청이고, 대기 중인 신청인지 확인
+        if (request.getStatus() != RequestStatus.RECRUITING
+                || application.getStatus() != ApplicationStatus.PENDING) {
+            throw new CustomException(ErrorCode.INVALID_STATUS);
+        }
+
+        // 5. 봉사자가 같은 날 다른 동행이 확정되어 있는지 확인
+        Long volunteerUserId = application.getVolunteerId();
+        if (applicationRepository.countAcceptedOnSameDate(
+                volunteerUserId, request.getDate(), request.getId(),
+                ApplicationStatus.ACCEPTED, RequestStatus.CANCELED) > 0) {
+            throw new CustomException(ErrorCode.SCHEDULE_CONFLICT);
+        }
+
+        // 6. 수락하고 동행 기록 생성
+        application.changeStatus(ApplicationStatus.PENDING, ApplicationStatus.ACCEPTED);
+        Visit visit = visitRepository.save(
+                Visit.create(request.getId(), volunteerUserId, checklistFactory.create(request.getNeeds())));
+
+        // 7. 정원이 차면 모집 마감
+        long acceptedCount = applicationRepository.countByRequestIdAndStatus(
+                request.getId(), ApplicationStatus.ACCEPTED);
+        if (acceptedCount >= request.getHelpersNeeded()) {
+            request.changeStatus(RequestStatus.RECRUITING, RequestStatus.CONFIRMED);
+            applicationRepository.findAllByRequestIdAndStatus(request.getId(), ApplicationStatus.PENDING)
+                    .forEach(a -> a.changeStatus(ApplicationStatus.PENDING, ApplicationStatus.CLOSED));
+        }
+
+        return new AcceptResult(request.getId(), request.getStatus(), visit.getId());
     }
 }
