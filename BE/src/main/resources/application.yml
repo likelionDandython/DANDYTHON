@@ -24,3 +24,10 @@ cors:
 springdoc:
   swagger-ui:
     path: /swagger-ui.html
+
+llm:
+  gemini:
+    api-key: ${GEMINI_API_KEY:}
+    model: ${GEMINI_MODEL:gemini-3.1-flash-lite}
+    timeout: ${GEMINI_TIMEOUT:10s}
+    min-memo-length: ${SUMMARY_MIN_MEMO_LENGTH:20}
