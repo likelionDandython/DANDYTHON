@@ -134,8 +134,10 @@ export function VolunteerCertificate() {
     const wd = '일월화수목금토'[new Date(y, m - 1, d).getDay()]
     return `${y}년 ${m}월 ${d}일 (${wd})`
   }
-  const ampm = (iso: string) => {
-    const [h, mm] = iso.slice(11, 16).split(':').map(Number)
+  /** 'HH:mm' 또는 ISO 날짜시간 둘 다 받아요 */
+  const ampm = (t: string) => {
+    const hm = t.length <= 8 ? t.slice(0, 5) : t.slice(11, 16)
+    const [h, mm] = hm.split(':').map(Number)
     return `${h < 12 ? '오전' : '오후'} ${h % 12 || 12}:${String(mm).padStart(2, '0')}`
   }
   const rows: [string, string][] = c

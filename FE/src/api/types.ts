@@ -14,7 +14,8 @@ export type MeetPlaceType = 'HOME' | 'STATION' | 'HOSPITAL'
 export type Need = 'WALK_ASSIST' | 'WHEELCHAIR' | 'EXAM_ESCORT' | 'PHARMACY' | 'RIDE_HOME'
 export type RequestStatus = 'RECRUITING' | 'CONFIRMED' | 'IN_PROGRESS' | 'COMPLETED' | 'APPROVED' | 'CANCELED'
 export type ApplicationStatus = 'PENDING' | 'ACCEPTED' | 'CLOSED' | 'CANCELED'
-export type VisitStep = 'MEET' | 'RECEPTION' | 'TREATMENT' | 'PAYMENT' | 'PHARMACY' | 'SEE_OFF'
+/** WHEELCHAIR_RENTAL: 휠체어 도움이 필요한 요청에만 BE 가 넣는 단계 */
+export type VisitStep = 'MEET' | 'WHEELCHAIR_RENTAL' | 'RECEPTION' | 'TREATMENT' | 'PAYMENT' | 'PHARMACY' | 'SEE_OFF'
 
 export type ConsentItem =
   | 'TERMS'
@@ -139,7 +140,8 @@ export type RequestDetail = {
   targetType?: TargetType
   travelMode?: TravelMode
   expectedHours?: number
-  senior: { name: string; age: number; region: string; phone: string | null }
+  /** 본인(SELF) 요청이면 age 는 null */
+  senior: { name: string; age: number | null; region: string; phone: string | null }
   date: string
   meetTime: string
   meetPlaceType: MeetPlaceType
@@ -209,7 +211,7 @@ export type CheckoutResult = { visitId: number; startedAt: string; endedAt: stri
 // ── 6. 메모·요약·승인 ──
 export type VisitSummary = {
   visitId: number
-  status: 'DONE' | 'FALLBACK'
+  status: 'NONE' | 'DONE' | 'FALLBACK'
   summary: {
     todayPoints: string[]
     nextVisit: string
@@ -225,6 +227,7 @@ export type Certificate = {
   school: string
   date: string
   hospitalName: string
+  /** BE 는 'HH:mm' 으로 내려줘요 */
   startedAt: string
   endedAt: string
   approvedMinutes: number

@@ -74,6 +74,7 @@ const ERROR_MESSAGE: Record<string, string> = {
   APPLICATION_NOT_FOUND: '신청 내역을 찾을 수 없어요.',
   VISIT_NOT_FOUND: '동행 기록을 찾을 수 없어요.',
   SUMMARY_NOT_FOUND: '아직 진료 요약이 없어요.',
+  SUMMARY_CONSENT_REQUIRED: '진료 요약을 받으려면 요약 수신·공유 동의가 필요해요.',
   INTERNAL_ERROR: '서버에 문제가 생겼어요. 잠시 후 다시 시도해 주세요.',
 }
 
