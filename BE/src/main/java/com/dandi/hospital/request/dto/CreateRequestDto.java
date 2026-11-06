@@ -1,6 +1,8 @@
 package com.dandi.hospital.request.dto;
 
 import com.dandi.hospital.global.enums.GenderPref;
+import com.dandi.hospital.global.enums.TravelMode;
+import com.dandi.hospital.request.entity.RequestTargetType;
 import com.dandi.hospital.global.enums.MeetPlaceType;
 import com.dandi.hospital.global.enums.Need;
 import jakarta.validation.constraints.FutureOrPresent;
@@ -16,7 +18,9 @@ import java.time.LocalTime;
 import java.util.List;
 
 public record CreateRequestDto(
-        @NotNull Long seniorId,
+        RequestTargetType targetType,   // SELF(나) 또는 FAMILY(가족), 없으면 FAMILY
+        Long seniorId,                  // FAMILY일 때만 필수
+        TravelMode travelMode,          // 이동 방법 (선택)
         @NotNull @FutureOrPresent LocalDate date,
         @NotNull LocalTime meetTime,
         @NotNull MeetPlaceType meetPlaceType,

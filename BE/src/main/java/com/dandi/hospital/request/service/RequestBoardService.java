@@ -8,8 +8,6 @@ import com.dandi.hospital.hospital.service.HospitalService;
 import com.dandi.hospital.request.dto.BoardItem;
 import com.dandi.hospital.request.entity.Request;
 import com.dandi.hospital.request.repository.RequestRepository;
-import com.dandi.hospital.senior.entity.Senior;
-import com.dandi.hospital.senior.repository.SeniorRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,12 +23,12 @@ import java.util.List;
 @Transactional(readOnly = true)
 public class RequestBoardService {
 
-    private static final int EXPECTED_HOURS = 4; // 임시값, 팀 기준 확정 후 변경
+    static final int EXPECTED_HOURS = 4; // 임시값, 팀 기준 확정 후 변경
 
     private final RequestRepository requestRepository;
     private final HospitalService hospitalService;
-    private final SeniorRepository seniorRepository;
     private final ApplicationRepository applicationRepository;
+    private final RequestTargetResolver targetResolver;
 
     public List<BoardItem> getBoard(Long userId, LocalDate date, Long hospitalId, Need need) {
         LocalDateTime now = LocalDateTime.now(ZoneId.of("Asia/Seoul"));
@@ -48,9 +46,7 @@ public class RequestBoardService {
     }
 
     private BoardItem toItem(Request request, Long userId, LocalDate today) {
-        String region = seniorRepository.findById(request.getSeniorId())
-                .map(Senior::getRegion)
-                .orElse("");
+        String region = targetResolver.resolve(request).region();
         List<Need> needs = List.copyOf(request.getNeeds());
 
         return new BoardItem(

@@ -18,4 +18,7 @@ public interface RequestRepository extends JpaRepository<Request, Long> {
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select r from Request r where r.id = :requestId")
     Optional<Request> findByIdForUpdate(@Param("requestId") Long requestId);
+
+    // 내가 등록한 요청 목록 (최근 날짜 순)
+    List<Request> findAllByGuardianIdOrderByDateDescMeetTimeDesc(Long guardianId);
 }
