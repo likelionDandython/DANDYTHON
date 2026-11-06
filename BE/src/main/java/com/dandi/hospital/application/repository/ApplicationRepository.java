@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
+import java.util.Collection;
 import java.util.List;
 
 public interface ApplicationRepository extends JpaRepository<Application, Long> {
@@ -43,4 +44,10 @@ public interface ApplicationRepository extends JpaRepository<Application, Long> 
                                     @Param("requestId") Long requestId,
                                     @Param("accepted") ApplicationStatus accepted,
                                     @Param("canceled") RequestStatus canceled);
+
+    // 요청별 여러 상태의 신청 수
+    long countByRequestIdAndStatusIn(Long requestId, Collection<ApplicationStatus> statuses);
+
+    // 내가 신청한 목록 (최근 순)
+    List<Application> findAllByVolunteerIdOrderByIdDesc(Long volunteerId);
 }

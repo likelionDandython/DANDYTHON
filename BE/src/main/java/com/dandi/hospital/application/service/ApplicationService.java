@@ -5,6 +5,7 @@ import com.dandi.hospital.application.dto.AcceptResult;
 import com.dandi.hospital.application.dto.ApplicationItem;
 import com.dandi.hospital.application.dto.ApplicationItem.VolunteerSummary;
 import com.dandi.hospital.application.dto.ApplyResult;
+import com.dandi.hospital.application.dto.MyApplicationItem;
 import com.dandi.hospital.application.entity.Application;
 import com.dandi.hospital.application.repository.ApplicationRepository;
 import com.dandi.hospital.global.enums.ApplicationStatus;
@@ -12,6 +13,7 @@ import com.dandi.hospital.global.enums.RequestStatus;
 import com.dandi.hospital.global.exception.CustomException;
 import com.dandi.hospital.global.exception.ErrorCode;
 import com.dandi.hospital.request.entity.Request;
+import com.dandi.hospital.hospital.service.HospitalService;
 import com.dandi.hospital.visit.entity.Visit;
 import com.dandi.hospital.visit.repository.VisitRepository;
 import com.dandi.hospital.visit.service.ChecklistFactory;
@@ -33,6 +35,7 @@ public class ApplicationService {
     private final VolunteerRepository volunteerRepository;
     private final VisitRepository visitRepository;
     private final ChecklistFactory checklistFactory;
+    private final HospitalService hospitalService;
 
     @Transactional
     public ApplyResult apply(Long volunteerId, Long requestId, ApplyRequestDto dto) {
@@ -159,5 +162,38 @@ public class ApplicationService {
         }
 
         return new AcceptResult(request.getId(), request.getStatus(), visit.getId());
+    }
+
+    /** 내가 신청한 목록 (최근 순) */
+    @Transactional(readOnly = true)
+    public List<MyApplicationItem> getMine(Long userId) {
+        return applicationRepository.findAllByVolunteerIdOrderByIdDesc(userId)
+                .stream()
+                .map(application -> toMyItem(application, userId))
+                .toList();
+    }
+
+    private MyApplicationItem toMyItem(Application application, Long userId) {
+        Request request = requestRepository.findById(application.getRequestId())
+                .orElseThrow(() -> new CustomException(ErrorCode.REQUEST_NOT_FOUND));
+
+        // 수락되어 동행 기록이 있으면 함께 보여 줌
+        Visit visit = visitRepository.findAllByRequestIdOrderByIdAsc(request.getId()).stream()
+                .filter(v -> v.getVolunteerId().equals(userId))
+                .findFirst()
+                .orElse(null);
+
+        return new MyApplicationItem(
+                application.getId(),
+                application.getStatus(),
+                request.getId(),
+                visit == null ? null : visit.getId(),
+                request.getDate(),
+                request.getMeetTime(),
+                hospitalService.getById(request.getHospitalId()).getName(),
+                request.getStatus(),
+                visit == null ? null : visit.getRecognizedMinutes(),
+                visit != null && visit.getApprovedAt() != null ? visit.getRecognizedMinutes() : null
+        );
     }
 }
