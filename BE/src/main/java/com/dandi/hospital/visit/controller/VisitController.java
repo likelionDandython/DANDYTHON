@@ -10,6 +10,7 @@ import com.dandi.hospital.visit.dto.StepUpdateResponse;
 import com.dandi.hospital.visit.dto.CheckoutResponse;
 import com.dandi.hospital.visit.dto.ApproveResponse;
 import com.dandi.hospital.visit.dto.ApproveRequest;
+import com.dandi.hospital.visit.dto.CertificateResponse;
 import com.dandi.hospital.visit.service.VisitQueryService;
 import com.dandi.hospital.visit.service.VisitService;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +29,12 @@ public class VisitController {
     public ApiResponse<VisitResponse> getVisit(
             @PathVariable Long visitId, @AuthenticationPrincipal LoginUser user) {
         return ApiResponse.ok(visitQueryService.getVisit(visitId, user == null ? null : user.id()));
+    }
+
+    @GetMapping("/{visitId}/certificate")
+    public ApiResponse<CertificateResponse> getCertificate(
+            @PathVariable Long visitId, @AuthenticationPrincipal LoginUser user) {
+        return ApiResponse.ok(visitQueryService.getCertificate(visitId, user == null ? null : user.id()));
     }
 
     @PostMapping("/{visitId}/checkin")
