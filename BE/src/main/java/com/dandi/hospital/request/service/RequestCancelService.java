@@ -43,7 +43,7 @@ public class RequestCancelService {
         }
 
         request.changeStatus(current, RequestStatus.CANCELED);
-        applicationRepository.findAllByRequestIdAndStatus(requestId, ApplicationStatus.PENDING)
+        applicationRepository.findAllByRequestIdAndStatusForUpdate(requestId, ApplicationStatus.PENDING)
                 .forEach(a -> a.changeStatus(ApplicationStatus.PENDING, ApplicationStatus.CLOSED));
 
         return new CancelRequestResult(requestId, request.getStatus(), isLate(request.getDate()));

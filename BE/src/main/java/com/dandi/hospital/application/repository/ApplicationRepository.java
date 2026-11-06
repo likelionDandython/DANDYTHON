@@ -3,13 +3,15 @@ package com.dandi.hospital.application.repository;
 import com.dandi.hospital.application.entity.Application;
 import com.dandi.hospital.global.enums.ApplicationStatus;
 import com.dandi.hospital.global.enums.RequestStatus;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import java.time.LocalDate;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 public interface ApplicationRepository extends JpaRepository<Application, Long> {
 
@@ -26,28 +28,30 @@ public interface ApplicationRepository extends JpaRepository<Application, Long> 
     // 봉사자의 수락된 동행 수
     long countByVolunteerIdAndStatus(Long volunteerId, ApplicationStatus status);
 
-    // 요청별 특정 상태의 신청 수
-    long countByRequestIdAndStatus(Long requestId, ApplicationStatus status);
-
-    // 봉사자가 같은 날짜에 이미 수락된 다른 동행이 있는지 확인
-    @Query("""
-            select count(a) from Application a, Request r
-            where a.requestId = r.id
-              and a.volunteerId = :volunteerId
-              and a.status = :accepted
-              and r.date = :date
-              and r.id <> :requestId
-              and r.status <> :canceled
-            """)
-    long countAcceptedOnSameDate(@Param("volunteerId") Long volunteerId,
-                                    @Param("date") LocalDate date,
-                                    @Param("requestId") Long requestId,
-                                    @Param("accepted") ApplicationStatus accepted,
-                                    @Param("canceled") RequestStatus canceled);
 
     // 요청별 여러 상태의 신청 수
     long countByRequestIdAndStatusIn(Long requestId, Collection<ApplicationStatus> statuses);
 
     // 내가 신청한 목록 (최근 순)
     List<Application> findAllByVolunteerIdOrderByIdDesc(Long volunteerId);
+
+    // ── 동시성 처리용 (요청을 잠근 뒤 최신 상태를 읽기 위한 잠금 조회) ──
+
+    // 신청이 속한 요청 번호만 조회 (엔티티를 불러오지 않음)
+    @Query("select a.requestId from Application a where a.id = :applicationId")
+    Optional<Long> findRequestIdById(@Param("applicationId") Long applicationId);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select a from Application a where a.id = :applicationId")
+    Optional<Application> findByIdForUpdate(@Param("applicationId") Long applicationId);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select a from Application a where a.requestId = :requestId and a.status = :status order by a.id")
+    List<Application> findAllByRequestIdAndStatusForUpdate(@Param("requestId") Long requestId,
+                                                           @Param("status") ApplicationStatus status);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select a from Application a where a.volunteerId = :volunteerId and a.status = :status order by a.id")
+    List<Application> findAllByVolunteerIdAndStatusForUpdate(@Param("volunteerId") Long volunteerId,
+                                                             @Param("status") ApplicationStatus status);
 }
