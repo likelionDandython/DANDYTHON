@@ -4,6 +4,7 @@ import com.dandi.hospital.application.dto.ApplyRequestDto;
 import com.dandi.hospital.application.dto.AcceptResult;
 import com.dandi.hospital.application.dto.ApplicationItem;
 import com.dandi.hospital.application.dto.ApplyResult;
+import com.dandi.hospital.application.dto.CancelApplicationResult;
 import com.dandi.hospital.application.dto.MyApplicationItem;
 import com.dandi.hospital.application.service.ApplicationService;
 import com.dandi.hospital.global.response.ApiResponse;
@@ -49,5 +50,12 @@ public class ApplicationController {
     @GetMapping("/applications/me")
     public ApiResponse<List<MyApplicationItem>> mine(@AuthenticationPrincipal LoginUser user) {
         return ApiResponse.ok(applicationService.getMine(user.id()));
+    }
+
+    @DeleteMapping("/applications/{applicationId}")
+    public ApiResponse<CancelApplicationResult> cancel(
+            @AuthenticationPrincipal LoginUser user,
+            @PathVariable Long applicationId) {
+        return ApiResponse.ok(applicationService.cancel(user.id(), applicationId));
     }
 }

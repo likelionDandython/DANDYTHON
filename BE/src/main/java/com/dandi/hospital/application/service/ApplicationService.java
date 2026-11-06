@@ -5,6 +5,7 @@ import com.dandi.hospital.application.dto.AcceptResult;
 import com.dandi.hospital.application.dto.ApplicationItem;
 import com.dandi.hospital.application.dto.ApplicationItem.VolunteerSummary;
 import com.dandi.hospital.application.dto.ApplyResult;
+import com.dandi.hospital.application.dto.CancelApplicationResult;
 import com.dandi.hospital.application.dto.MyApplicationItem;
 import com.dandi.hospital.application.entity.Application;
 import com.dandi.hospital.application.repository.ApplicationRepository;
@@ -24,6 +25,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 
 @Service
@@ -195,5 +198,58 @@ public class ApplicationService {
                 visit == null ? null : visit.getRecognizedMinutes(),
                 visit != null && visit.getApprovedAt() != null ? visit.getRecognizedMinutes() : null
         );
+    }
+
+    /**
+     * 신청 취소 (신청한 봉사자만)
+     * - 대기 중 또는 수락된 신청만 취소 가능, 동행이 시작된 요청은 불가
+     * - 수락된 신청이면 동행 기록을 지우고, 확정된 요청은 다시 모집 중으로 되돌림
+     *   (정원이 차서 CLOSED 됐던 신청도 다시 대기 중으로 돌려 보호자가 다시 고를 수 있게 함)
+     * - 수락된 신청을 동행일 2일 이내에 취소하면 lateCancel = true
+     */
+    @Transactional
+    public CancelApplicationResult cancel(Long userId, Long applicationId) {
+        Application application = applicationRepository.findById(applicationId)
+                .orElseThrow(() -> new CustomException(ErrorCode.APPLICATION_NOT_FOUND));
+
+        if (!application.getVolunteerId().equals(userId)) {
+            throw new CustomException(ErrorCode.FORBIDDEN);
+        }
+
+        Request request = requestRepository.findByIdForUpdate(application.getRequestId())
+                .orElseThrow(() -> new CustomException(ErrorCode.REQUEST_NOT_FOUND));
+
+        if (request.getStatus() != RequestStatus.RECRUITING && request.getStatus() != RequestStatus.CONFIRMED) {
+            throw new CustomException(ErrorCode.INVALID_STATUS);
+        }
+
+        ApplicationStatus current = application.getStatus();
+        if (current != ApplicationStatus.PENDING && current != ApplicationStatus.ACCEPTED) {
+            throw new CustomException(ErrorCode.INVALID_STATUS);
+        }
+
+        boolean lateCancel = false;
+        if (current == ApplicationStatus.ACCEPTED) {
+            // 내 동행 기록 삭제 (아직 시작 전이어야 함)
+            visitRepository.findAllByRequestIdOrderByIdAsc(request.getId()).stream()
+                    .filter(v -> v.getVolunteerId().equals(userId))
+                    .forEach(v -> {
+                        if (v.getStartedAt() != null) throw new CustomException(ErrorCode.INVALID_STATUS);
+                        visitRepository.delete(v);
+                    });
+
+            // 확정됐던 요청은 다시 모집 중으로
+            if (request.getStatus() == RequestStatus.CONFIRMED) {
+                request.changeStatus(RequestStatus.CONFIRMED, RequestStatus.RECRUITING);
+                applicationRepository.findAllByRequestIdAndStatus(request.getId(), ApplicationStatus.CLOSED)
+                        .forEach(a -> a.changeStatus(ApplicationStatus.CLOSED, ApplicationStatus.PENDING));
+            }
+
+            LocalDate today = LocalDate.now(ZoneId.of("Asia/Seoul"));
+            lateCancel = !request.getDate().isAfter(today.plusDays(2));
+        }
+
+        application.changeStatus(current, ApplicationStatus.CANCELED);
+        return new CancelApplicationResult(application.getId(), application.getStatus(), lateCancel);
     }
 }

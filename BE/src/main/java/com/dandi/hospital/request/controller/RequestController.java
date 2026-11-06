@@ -4,12 +4,14 @@ import com.dandi.hospital.global.enums.Need;
 import com.dandi.hospital.global.response.ApiResponse;
 import com.dandi.hospital.global.security.LoginUser;
 import com.dandi.hospital.request.dto.BoardItem;
+import com.dandi.hospital.request.dto.CancelRequestResult;
 import com.dandi.hospital.request.dto.CreateRequestDto;
 import com.dandi.hospital.request.dto.CreateRequestResult;
 import com.dandi.hospital.request.dto.MyRequestItem;
 import com.dandi.hospital.request.dto.RequestDetail;
 import com.dandi.hospital.request.service.MyRequestService;
 import com.dandi.hospital.request.service.RequestBoardService;
+import com.dandi.hospital.request.service.RequestCancelService;
 import com.dandi.hospital.request.service.RequestDetailService;
 import com.dandi.hospital.request.service.RequestService;
 import jakarta.validation.Valid;
@@ -32,6 +34,7 @@ public class RequestController {
     private final RequestBoardService requestBoardService;
     private final RequestDetailService requestDetailService;
     private final MyRequestService myRequestService;
+    private final RequestCancelService requestCancelService;
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
@@ -61,5 +64,12 @@ public class RequestController {
     @GetMapping("/me")
     public ApiResponse<List<MyRequestItem>> mine(@AuthenticationPrincipal LoginUser user) {
         return ApiResponse.ok(myRequestService.getMine(user.id()));
+    }
+
+    @DeleteMapping("/{requestId}")
+    public ApiResponse<CancelRequestResult> cancel(
+            @AuthenticationPrincipal LoginUser user,
+            @PathVariable Long requestId) {
+        return ApiResponse.ok(requestCancelService.cancel(user.id(), requestId));
     }
 }
