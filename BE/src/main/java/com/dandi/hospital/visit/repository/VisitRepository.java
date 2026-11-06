@@ -24,4 +24,7 @@ public interface VisitRepository extends JpaRepository<Visit, Long> {
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select v from Visit v where v.requestId = :requestId order by v.id")
     List<Visit> findAllByRequestIdForUpdate(@Param("requestId") Long requestId);
+
+    // 요청 상세 조회용 (잠금 없음)
+    List<Visit> findAllByRequestIdOrderByIdAsc(Long requestId);
 }

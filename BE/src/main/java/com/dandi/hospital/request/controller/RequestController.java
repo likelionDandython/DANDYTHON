@@ -6,7 +6,9 @@ import com.dandi.hospital.global.security.LoginUser;
 import com.dandi.hospital.request.dto.BoardItem;
 import com.dandi.hospital.request.dto.CreateRequestDto;
 import com.dandi.hospital.request.dto.CreateRequestResult;
+import com.dandi.hospital.request.dto.RequestDetail;
 import com.dandi.hospital.request.service.RequestBoardService;
+import com.dandi.hospital.request.service.RequestDetailService;
 import com.dandi.hospital.request.service.RequestService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +28,7 @@ public class RequestController {
 
     private final RequestService requestService;
     private final RequestBoardService requestBoardService;
+    private final RequestDetailService requestDetailService;
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
@@ -43,5 +46,12 @@ public class RequestController {
             @RequestParam(required = false) Long hospitalId,
             @RequestParam(required = false) Need need) {
         return ApiResponse.ok(requestBoardService.getBoard(user.id(), date, hospitalId, need));
+    }
+
+    @GetMapping("/{requestId}")
+    public ApiResponse<RequestDetail> detail(
+            @AuthenticationPrincipal LoginUser user,
+            @PathVariable Long requestId) {
+        return ApiResponse.ok(requestDetailService.getDetail(user.id(), requestId));
     }
 }

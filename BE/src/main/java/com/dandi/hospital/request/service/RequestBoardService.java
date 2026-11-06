@@ -24,7 +24,7 @@ import java.util.List;
 @Transactional(readOnly = true)
 public class RequestBoardService {
 
-    private static final int EXPECTED_HOURS = 4; // 임시값, 팀 기준 확정 후 변경
+    static final int EXPECTED_HOURS = 4; // 임시값, 팀 기준 확정 후 변경
 
     private final RequestRepository requestRepository;
     private final HospitalService hospitalService;
