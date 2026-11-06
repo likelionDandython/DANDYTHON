@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Comparator;
 import java.util.List;
@@ -32,11 +33,12 @@ public class RequestBoardService {
     private final ApplicationRepository applicationRepository;
 
     public List<BoardItem> getBoard(Long userId, LocalDate date, Long hospitalId, Need need) {
-        LocalDate today = LocalDate.now(ZoneId.of("Asia/Seoul"));
+        LocalDateTime now = LocalDateTime.now(ZoneId.of("Asia/Seoul"));
+        LocalDate today = now.toLocalDate();
 
         return requestRepository.findAllByStatusOrderByDateAscMeetTimeAsc(RequestStatus.RECRUITING)
                 .stream()
-                .filter(r -> !r.getDate().isBefore(today)) // 지난 요청 제외
+                .filter(r -> !LocalDateTime.of(r.getDate(), r.getMeetTime()).isBefore(now)) // 만남 시각이 지난 요청 제외
                 .filter(r -> date == null || r.getDate().equals(date))
                 .filter(r -> hospitalId == null || r.getHospitalId().equals(hospitalId))
                 .filter(r -> need == null || r.getNeeds().contains(need))
