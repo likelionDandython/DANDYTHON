@@ -10,6 +10,7 @@ import com.dandi.hospital.request.entity.Request;
 import com.dandi.hospital.request.repository.RequestRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
@@ -28,7 +29,7 @@ public class RequestCancelService {
      * - 대기 중인 신청은 CLOSED 처리
      * - 동행일 2일 이내 취소면 lateCancel = true
      */
-    @Transactional
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public CancelRequestResult cancel(Long userId, Long requestId) {
         Request request = requestRepository.findByIdForUpdate(requestId)
                 .orElseThrow(() -> new CustomException(ErrorCode.REQUEST_NOT_FOUND));
@@ -43,7 +44,7 @@ public class RequestCancelService {
         }
 
         request.changeStatus(current, RequestStatus.CANCELED);
-        applicationRepository.findAllByRequestIdAndStatusForUpdate(requestId, ApplicationStatus.PENDING)
+        applicationRepository.findAllByRequestIdAndStatus(requestId, ApplicationStatus.PENDING)
                 .forEach(a -> a.changeStatus(ApplicationStatus.PENDING, ApplicationStatus.CLOSED));
 
         return new CancelRequestResult(requestId, request.getStatus(), isLate(request.getDate()));
