@@ -14,8 +14,6 @@ import com.dandi.hospital.request.dto.RequestDetail.SeniorInfo;
 import com.dandi.hospital.request.dto.RequestDetail.VolunteerInfo;
 import com.dandi.hospital.request.entity.Request;
 import com.dandi.hospital.request.repository.RequestRepository;
-import com.dandi.hospital.senior.entity.Senior;
-import com.dandi.hospital.senior.repository.SeniorRepository;
 import com.dandi.hospital.user.entity.User;
 import com.dandi.hospital.user.repository.UserRepository;
 import com.dandi.hospital.visit.entity.Visit;
@@ -33,17 +31,16 @@ import java.util.Objects;
 public class RequestDetailService {
 
     private final RequestRepository requestRepository;
-    private final SeniorRepository seniorRepository;
     private final HospitalService hospitalService;
     private final UserRepository userRepository;
     private final ApplicationRepository applicationRepository;
     private final VisitRepository visitRepository;
+    private final RequestTargetResolver targetResolver;
 
     public RequestDetail getDetail(Long userId, Long requestId) {
         Request request = requestRepository.findById(requestId)
                 .orElseThrow(() -> new CustomException(ErrorCode.REQUEST_NOT_FOUND));
-        Senior senior = seniorRepository.findById(request.getSeniorId())
-                .orElseThrow(() -> new CustomException(ErrorCode.SENIOR_NOT_FOUND));
+        RequestTargetResolver.Target target = targetResolver.resolve(request);
         Hospital hospital = hospitalService.getById(request.getHospitalId());
 
         // 수락된 봉사자 ID 목록
@@ -61,12 +58,14 @@ public class RequestDetailService {
                 request.getId(),
                 request.getStatus(),
                 request.getGuardianId(),
+                request.getTargetType(),
+                request.getTravelMode(),
                 RequestBoardService.EXPECTED_HOURS,
                 new SeniorInfo(
-                        canSeeContact ? senior.getName() : maskName(senior.getName()),
-                        senior.getAge(),
-                        senior.getRegion(),
-                        canSeeContact ? senior.getPhone() : null),
+                        canSeeContact ? target.name() : maskName(target.name()),
+                        target.age(),
+                        target.region(),
+                        canSeeContact ? target.phone() : null),
                 request.getDate(),
                 request.getMeetTime(),
                 request.getMeetPlaceType(),

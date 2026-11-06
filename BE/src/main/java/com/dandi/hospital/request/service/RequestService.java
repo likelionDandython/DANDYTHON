@@ -7,6 +7,7 @@ import com.dandi.hospital.hospital.service.HospitalService;
 import com.dandi.hospital.request.dto.CreateRequestDto;
 import com.dandi.hospital.request.dto.CreateRequestResult;
 import com.dandi.hospital.request.entity.Request;
+import com.dandi.hospital.request.entity.RequestTargetType;
 import com.dandi.hospital.request.repository.RequestRepository;
 import com.dandi.hospital.senior.service.SeniorService;
 import lombok.RequiredArgsConstructor;
@@ -45,12 +46,19 @@ public class RequestService {
 
     @Transactional
     public CreateRequestResult create(Long guardianId, CreateRequestDto dto) {
-        seniorService.getOwnedSenior(dto.seniorId(), guardianId); // 없으면 404, 남의 어르신이면 403
+        RequestTargetType targetType = dto.targetType() == null ? RequestTargetType.FAMILY : dto.targetType();
+        if (targetType == RequestTargetType.FAMILY) {
+            if (dto.seniorId() == null)
+                throw new CustomException(ErrorCode.INVALID_INPUT);    // 가족 요청은 어르신 선택 필수
+            seniorService.getOwnedSenior(dto.seniorId(), guardianId); // 없으면 404, 남의 어르신이면 403
+        }
         hospitalService.getById(dto.hospitalId());                // 없으면 404
 
         Request request = Request.builder()
                 .guardianId(guardianId)
-                .seniorId(dto.seniorId())
+                .targetType(targetType)
+                .seniorId(targetType == RequestTargetType.FAMILY ? dto.seniorId() : null)
+                .travelMode(dto.travelMode())
                 .hospitalId(dto.hospitalId())
                 .date(dto.date())
                 .meetTime(dto.meetTime())

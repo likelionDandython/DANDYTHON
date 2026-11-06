@@ -6,8 +6,6 @@ import com.dandi.hospital.hospital.service.HospitalService;
 import com.dandi.hospital.request.dto.MyRequestItem;
 import com.dandi.hospital.request.entity.Request;
 import com.dandi.hospital.request.repository.RequestRepository;
-import com.dandi.hospital.senior.entity.Senior;
-import com.dandi.hospital.senior.repository.SeniorRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,9 +18,9 @@ import java.util.List;
 public class MyRequestService {
 
     private final RequestRepository requestRepository;
-    private final SeniorRepository seniorRepository;
     private final HospitalService hospitalService;
     private final ApplicationRepository applicationRepository;
+    private final RequestTargetResolver targetResolver;
 
     /** 내가 등록한 요청 목록 (최근 날짜 순) */
     public List<MyRequestItem> getMine(Long userId) {
@@ -33,9 +31,7 @@ public class MyRequestService {
     }
 
     private MyRequestItem toItem(Request request) {
-        String seniorName = seniorRepository.findById(request.getSeniorId())
-                .map(Senior::getName)
-                .orElse("");
+        String seniorName = targetResolver.resolve(request).name();
 
         return new MyRequestItem(
                 request.getId(),

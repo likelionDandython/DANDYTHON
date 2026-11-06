@@ -4,6 +4,8 @@ import com.dandi.hospital.global.enums.GenderPref;
 import com.dandi.hospital.global.enums.MeetPlaceType;
 import com.dandi.hospital.global.enums.Need;
 import com.dandi.hospital.global.enums.RequestStatus;
+import com.dandi.hospital.global.enums.TravelMode;
+import com.dandi.hospital.request.entity.RequestTargetType;
 import com.fasterxml.jackson.annotation.JsonFormat;
 
 import java.time.LocalDate;
@@ -15,6 +17,8 @@ public record RequestDetail(
         Long requestId,
         RequestStatus status,
         Long requesterId,
+        RequestTargetType targetType,
+        TravelMode travelMode,
         int expectedHours,
         SeniorInfo senior,
         LocalDate date,
@@ -31,7 +35,7 @@ public record RequestDetail(
         List<VolunteerInfo> volunteers, // 요청자·확정 봉사자에게만 공개
         Long visitId
 ) {
-    public record SeniorInfo(String name, int age, String region, String phone) {}
+    public record SeniorInfo(String name, Integer age, String region, String phone) {} // 본인 요청이면 age는 null
 
     public record HospitalInfo(Long hospitalId, String name) {}
 

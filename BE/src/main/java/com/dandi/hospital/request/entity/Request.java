@@ -5,6 +5,7 @@ import com.dandi.hospital.global.enums.GenderPref;
 import com.dandi.hospital.global.enums.MeetPlaceType;
 import com.dandi.hospital.global.enums.Need;
 import com.dandi.hospital.global.enums.RequestStatus;
+import com.dandi.hospital.global.enums.TravelMode;
 import com.dandi.hospital.global.exception.CustomException;
 import com.dandi.hospital.global.exception.ErrorCode;
 import jakarta.persistence.*;
@@ -36,8 +37,12 @@ public class Request extends BaseEntity {
     @Column(length = 10)
     private RequestTargetType targetType;
 
-    @Column(nullable = false)
-    private Long seniorId; // 동행할 어르신
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20)
+    private TravelMode travelMode; // 이동 방법
+
+    @Column
+    private Long seniorId; // 동행할 어르신 (본인 요청이면 null)
 
     @Column(nullable = false)
     private Long hospitalId; // 방문할 병원
@@ -94,10 +99,12 @@ public class Request extends BaseEntity {
     private Request(Long guardianId, Long seniorId, Long hospitalId, LocalDate date,
                     LocalTime meetTime, MeetPlaceType meetPlaceType, String meetAddress,
                     String department, List<Need> needs, String notes,
-                    int helpersNeeded, GenderPref genderPref, RequestTargetType targetType) {
+                    int helpersNeeded, GenderPref genderPref, RequestTargetType targetType,
+                    TravelMode travelMode) {
         this.guardianId = guardianId;
         this.targetType = targetType == null ? RequestTargetType.FAMILY : targetType;
         this.seniorId = seniorId;
+        this.travelMode = travelMode;
         this.hospitalId = hospitalId;
         this.date = date;
         this.meetTime = meetTime;
