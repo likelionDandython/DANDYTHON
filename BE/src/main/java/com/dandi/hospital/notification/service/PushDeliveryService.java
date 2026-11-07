@@ -36,7 +36,7 @@ public class PushDeliveryService {
                 || !registration.getUserId().equals(notification.getUserId())
                 || registration.getGeneration() != delivery.getRegistrationGeneration()
                 || !eligibility.permits(new NotificationCommand(notification.getEventKey(), notification.getType(),
-                    notification.getUserId(), notification.getRequestId(), notification.getVisitId()))
+                    notification.getUserId(), notification.getRequestId(), notification.getVisitId(), notification.getApplicationId()))
                 || !settings.findById(notification.getUserId()).map(NotificationSettings::toDto)
                     .orElseGet(NotificationSettingsDto::defaults).allows(notification.getType())) {
             delivery.finish(PushDelivery.Status.SKIPPED, now, null);

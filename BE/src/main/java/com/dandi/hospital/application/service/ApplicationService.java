@@ -29,6 +29,10 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.List;
+import org.springframework.context.ApplicationEventPublisher;
+import com.dandi.hospital.notification.dto.NotificationCommand;
+import com.dandi.hospital.notification.entity.NotificationType;
+import com.dandi.hospital.notification.event.NotificationEvents;
 
 @Service
 @RequiredArgsConstructor
@@ -40,6 +44,7 @@ public class ApplicationService {
     private final VisitRepository visitRepository;
     private final ChecklistFactory checklistFactory;
     private final HospitalService hospitalService;
+    private final ApplicationEventPublisher events;
 
     @Transactional
     public ApplyResult apply(Long volunteerId, Long requestId, ApplyRequestDto dto) {
@@ -69,6 +74,7 @@ public class ApplicationService {
                 .message(dto.message())
                 .build());
 
+        notify(NotificationType.APPLICATION_RECEIVED, request.getGuardianId(), requestId, null, saved.getId(), "application:" + saved.getId() + ":received");
         return new ApplyResult(saved.getId(), saved.getStatus());
     }
 
@@ -186,7 +192,15 @@ public class ApplicationService {
             request.changeStatus(RequestStatus.RECRUITING, RequestStatus.CONFIRMED);
             applicationRepository.findAllByRequestIdAndStatus(request.getId(), ApplicationStatus.PENDING)
                     .forEach(a -> a.changeStatus(ApplicationStatus.PENDING, ApplicationStatus.CLOSED));
+            String eventKey = "request:" + requestId + ":confirmed:" + applicationId;
+            notify(NotificationType.MATCH_CONFIRMED, request.getGuardianId(), requestId, visit.getId(), applicationId, eventKey);
+            visitRepository.findAllByRequestIdOrderByIdAsc(requestId).forEach(participant ->
+                    notify(NotificationType.MATCH_CONFIRMED, participant.getVolunteerId(), requestId,
+                            participant.getId(), applicationId, eventKey));
         }
+
+        notify(NotificationType.APPLICATION_ACCEPTED, volunteerUserId, requestId, visit.getId(), applicationId,
+                "application:" + applicationId + ":accepted");
 
         return new AcceptResult(request.getId(), request.getStatus(), visit.getId());
     }
@@ -279,6 +293,12 @@ public class ApplicationService {
         }
 
         application.changeStatus(current, ApplicationStatus.CANCELED);
+        notify(NotificationType.APPLICATION_CANCELED, request.getGuardianId(), requestId, null, applicationId,
+                "application:" + applicationId + ":canceled");
         return new CancelApplicationResult(application.getId(), application.getStatus(), lateCancel);
+    }
+
+    private void notify(NotificationType type, Long recipient, Long requestId, Long visitId, Long applicationId, String eventKey) {
+        NotificationEvents.publish(events, new NotificationCommand(eventKey, type, recipient, requestId, visitId, applicationId));
     }
 }

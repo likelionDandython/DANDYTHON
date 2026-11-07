@@ -78,6 +78,7 @@ public class NotificationService {
         data.put("type", notification.getType().name());
         data.put("requestId", notification.getRequestId().toString());
         if (notification.getVisitId() != null) data.put("visitId", notification.getVisitId().toString());
+        if (notification.getApplicationId() != null) data.put("applicationId", notification.getApplicationId().toString());
         return new PushMessage(target, notification.getType().getTitle(), notification.getType().getMessage(), data);
     }
 

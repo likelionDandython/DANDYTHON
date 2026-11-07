@@ -13,6 +13,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Objects;
+import com.dandi.hospital.application.repository.ApplicationRepository;
+import com.dandi.hospital.request.entity.Request;
 
 @Service
 @RequiredArgsConstructor
@@ -21,10 +23,16 @@ public class NotificationEligibility {
     private final RequestRepository requests;
     private final VisitRepository visits;
     private final ConsentRepository consents;
+    private final ApplicationRepository applications;
 
     public boolean permits(NotificationCommand command) {
         var request = requests.findById(command.requestId()).orElse(null);
-        if (request == null || request.getStatus() == RequestStatus.CANCELED || command.visitId() == null) return false;
+        if (request == null) return false;
+        if (switch (command.type()) {
+            case APPLICATION_RECEIVED, APPLICATION_ACCEPTED, MATCH_CONFIRMED, APPLICATION_CANCELED, REQUEST_CANCELED -> true;
+            default -> false;
+        }) return permitsMatching(command, request);
+        if (request.getStatus() == RequestStatus.CANCELED || command.visitId() == null) return false;
         var visit = visits.findById(command.visitId()).orElse(null);
         if (visit == null || !visit.getRequestId().equals(request.getId())) return false;
         if (command.type() == NotificationType.VISIT_APPROVED)
@@ -42,6 +50,35 @@ public class NotificationEligibility {
             case TREATMENT_DONE -> visit.getChecklist().stream().anyMatch(item -> item.step() == VisitStep.TREATMENT && item.done());
             case HOMECOMING -> visit.getEndedAt() != null || visit.getChecklist().stream()
                     .anyMatch(item -> item.step() == VisitStep.SEE_OFF && item.done());
+            default -> false;
+        };
+    }
+
+    private boolean permitsMatching(NotificationCommand command, Request request) {
+        if (command.applicationId() == null) return false;
+        var application = applications.findById(command.applicationId()).orElse(null);
+        if (application == null || !application.getRequestId().equals(request.getId())) return false;
+        if (command.visitId() != null) {
+            var visit = visits.findById(command.visitId()).orElse(null);
+            if (visit == null || !visit.getRequestId().equals(request.getId())
+                    || (!command.recipientUserId().equals(request.getGuardianId())
+                        && !command.recipientUserId().equals(visit.getVolunteerId()))) return false;
+        }
+        boolean owner = request.getGuardianId().equals(command.recipientUserId());
+        boolean applicant = application.getVolunteerId().equals(command.recipientUserId());
+        return switch (command.type()) {
+            case APPLICATION_RECEIVED -> owner && request.getStatus() == RequestStatus.RECRUITING
+                    && application.getStatus() == ApplicationStatus.PENDING;
+            case APPLICATION_ACCEPTED -> applicant && request.getStatus() != RequestStatus.CANCELED
+                    && application.getStatus() == ApplicationStatus.ACCEPTED;
+            case MATCH_CONFIRMED -> (request.getStatus() == RequestStatus.CONFIRMED || request.getStatus() == RequestStatus.IN_PROGRESS)
+                    && application.getStatus() == ApplicationStatus.ACCEPTED
+                    && (owner || applications.findAllByRequestIdAndStatus(request.getId(), ApplicationStatus.ACCEPTED)
+                        .stream().anyMatch(accepted -> accepted.getVolunteerId().equals(command.recipientUserId())));
+            case APPLICATION_CANCELED -> owner && request.getStatus() != RequestStatus.CANCELED
+                    && application.getStatus() == ApplicationStatus.CANCELED;
+            case REQUEST_CANCELED -> applicant && request.getStatus() == RequestStatus.CANCELED
+                    && (application.getStatus() == ApplicationStatus.ACCEPTED || application.getStatus() == ApplicationStatus.CLOSED);
             default -> false;
         };
     }

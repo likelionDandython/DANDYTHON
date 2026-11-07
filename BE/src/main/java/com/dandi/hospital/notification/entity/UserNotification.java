@@ -21,6 +21,7 @@ public class UserNotification {
     @Enumerated(EnumType.STRING) @Column(nullable = false, length = 40) private NotificationType type;
     @Column(nullable = false) private Long requestId;
     private Long visitId;
+    private Long applicationId;
     @Column(name = "is_read", nullable = false) private boolean read;
     private LocalDateTime readAt;
     @Column(nullable = false) private LocalDateTime occurredAt;
@@ -32,6 +33,7 @@ public class UserNotification {
         notification.type = command.type();
         notification.requestId = command.requestId();
         notification.visitId = command.visitId();
+        notification.applicationId = command.applicationId();
         notification.occurredAt = now;
         return notification;
     }
