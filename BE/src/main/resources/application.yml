@@ -31,3 +31,11 @@ llm:
     model: ${GEMINI_MODEL:gemini-3.1-flash-lite}
     timeout: ${GEMINI_TIMEOUT:10s}
     min-memo-length: ${SUMMARY_MIN_MEMO_LENGTH:20}
+
+notification:
+  firebase:
+    enabled: ${FCM_ENABLED:false}
+    project-id: ${FIREBASE_PROJECT_ID:}
+    connect-timeout: ${FCM_CONNECT_TIMEOUT:3s}
+    read-timeout: ${FCM_READ_TIMEOUT:5s}
+    write-timeout: ${FCM_WRITE_TIMEOUT:5s}
