@@ -19,7 +19,9 @@ export type NotificationItem = {
   /** 예시에는 ARRIVAL 만 있어요. 나머지 값은 BE 확인 전이라 모르는 값도 받아줘요. */
   type: string
   message: string
+  requestId: number | null
   visitId: number | null
+  applicationId: number | null
   read: boolean
   createdAt: string
 }

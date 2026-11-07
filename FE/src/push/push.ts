@@ -1,5 +1,6 @@
 /**
- * FCM 웹 푸시 (BE 답변 11/4): 로그인 후 권한 요청 → FCM 토큰 발급 → 서버에 등록, 로그아웃 때 삭제.
+ * FCM 웹 푸시: 로그인 후 권한 요청 → FCM 토큰 발급 → 서버에 등록, 로그아웃 때 삭제.
+ * 서버(BE #26)는 기기마다 등록해요: PUT·DELETE /users/me/push-registrations/{기기 ID}
  * Firebase 설정값(VITE_FIREBASE_*, VITE_FIREBASE_VAPID_KEY)은 BE 가 공유해 주면 FE/.env 에 넣어요.
  * 설정값이 없으면 푸시는 꺼진 채로 앱 안 알림 목록만 동작해요.
  */
@@ -23,6 +24,23 @@ const VAPID_KEY = env.VITE_FIREBASE_VAPID_KEY
 export const isPushConfigured = Object.values(config).every(Boolean) && !!VAPID_KEY
 
 const TOKEN_KEY = 'hospital-companion.push-token'
+const DEVICE_KEY = 'hospital-companion.device-id'
+
+/** 이 브라우저의 기기 ID (UUID). 한 번 만들면 계속 같은 값을 써요 */
+function deviceId(): string {
+  let id = localStorage.getItem(DEVICE_KEY)
+  if (!id) {
+    id =
+      typeof crypto !== 'undefined' && 'randomUUID' in crypto
+        ? crypto.randomUUID()
+        : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+            const r = (Math.random() * 16) | 0
+            return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16)
+          })
+    localStorage.setItem(DEVICE_KEY, id)
+  }
+  return id
+}
 
 /** 서비스 워커는 환경변수를 못 읽어서, 주소 뒤에 설정값을 붙여 넘겨요 */
 function swUrl() {
@@ -43,7 +61,7 @@ export async function registerPush(): Promise<void> {
     const token = await getToken(getMessaging(app), { vapidKey: VAPID_KEY, serviceWorkerRegistration: registration })
     if (!token) return
     if (localStorage.getItem(TOKEN_KEY) === token) return
-    await http.post('/notifications/push-token', { token })
+    await http.put(`/users/me/push-registrations/${deviceId()}`, { registrationType: 'TOKEN', registrationValue: token })
     localStorage.setItem(TOKEN_KEY, token)
   } catch {
     /* 푸시는 보조 기능이라 조용히 넘어가요 */
@@ -55,7 +73,7 @@ export async function unregisterPush(): Promise<void> {
   try {
     if (!localStorage.getItem(TOKEN_KEY)) return
     localStorage.removeItem(TOKEN_KEY)
-    await http.delete('/notifications/push-token')
+    await http.delete(`/users/me/push-registrations/${deviceId()}`)
   } catch {
     /* noop */
   }
