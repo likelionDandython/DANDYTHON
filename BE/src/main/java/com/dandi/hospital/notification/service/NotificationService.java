@@ -21,18 +21,21 @@ public class NotificationService {
     private final NotificationSettingsRepository settings;
     private final PushRegistrationRepository registrations;
     private final UserRepository users;
-    private final PushClient push;
+    private final PushDeliveryRepository deliveries;
+    private final PushDeliveryService deliveryService;
     private final Clock clock;
     private final TransactionTemplate transactions;
 
     public NotificationService(UserNotificationRepository notifications, NotificationSettingsRepository settings,
-            PushRegistrationRepository registrations, UserRepository users, PushClient push,
+            PushRegistrationRepository registrations, UserRepository users, PushDeliveryRepository deliveries,
+            PushDeliveryService deliveryService,
             Clock clock, PlatformTransactionManager manager) {
         this.notifications = notifications;
         this.settings = settings;
         this.registrations = registrations;
         this.users = users;
-        this.push = push;
+        this.deliveries = deliveries;
+        this.deliveryService = deliveryService;
         this.clock = clock;
         this.transactions = new TransactionTemplate(manager);
         this.transactions.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
@@ -42,25 +45,21 @@ public class NotificationService {
         Created created = transactions.execute(status -> {
             users.findByIdForUpdate(command.recipientUserId()).orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
             var existing = notifications.findByEventKeyAndUserId(command.eventKey(), command.recipientUserId());
-            if (existing.isPresent()) return new Created(existing.get(), false);
+            if (existing.isPresent()) return new Created(existing.get(), List.of());
             if (!allows(command.recipientUserId(), command.type())) return null;
             var notification = UserNotification.create(command, LocalDateTime.now(clock.withZone(ZoneId.of("Asia/Seoul"))));
-            return new Created(notifications.saveAndFlush(notification), true);
+            notifications.saveAndFlush(notification);
+            var jobs = registrations.findAllByUserIdAndActiveTrueOrderByIdAsc(notification.getUserId()).stream()
+                    .map(registration -> PushDelivery.create(notification.getId(), registration, notification.getOccurredAt())).toList();
+            return new Created(notification, deliveries.saveAllAndFlush(jobs).stream().map(PushDelivery::getId).toList());
         });
         if (created == null) return null;
-        if (!created.fresh()) return created.notification().getId();
         var notification = created.notification();
-        var devices = transactions.execute(status -> registrations.findAllByUserIdAndActiveTrueOrderByIdAsc(notification.getUserId())
-                .stream().map(PushRegistration::getId).toList());
-        for (Long device : Objects.requireNonNull(devices)) {
+        for (Long delivery : created.deliveryIds()) {
             try {
-                transactions.executeWithoutResult(status -> registrations.findByIdForUpdate(device).ifPresent(registration -> {
-                    if (!registration.isActive() || !registration.getUserId().equals(notification.getUserId())
-                            || !allows(notification.getUserId(), notification.getType())) return;
-                    push.send(message(notification, new PushTarget(registration.getRegistrationType(), registration.getRegistrationValue())));
-                }));
+                deliveryService.deliver(delivery);
             } catch (RuntimeException e) {
-                log.warn("Push delivery failed: notificationId={}, registrationId={}", notification.getId(), device);
+                log.warn("Push delivery deferred: notificationId={}, deliveryId={}", notification.getId(), delivery);
             }
         }
         return notification.getId();
@@ -79,5 +78,5 @@ public class NotificationService {
         return new PushMessage(target, notification.getType().getTitle(), notification.getType().getMessage(), data);
     }
 
-    private record Created(UserNotification notification, boolean fresh) {}
+    private record Created(UserNotification notification, List<Long> deliveryIds) {}
 }

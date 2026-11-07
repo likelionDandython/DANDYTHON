@@ -46,6 +46,9 @@ public class PushRegistration extends BaseEntity {
     private boolean active;
 
     @Column(nullable = false)
+    private long generation;
+
+    @Column(nullable = false)
     private LocalDateTime refreshedAt;
 
     public static PushRegistration create(Long userId, String deviceId, PushTarget target, LocalDateTime now) {
@@ -61,6 +64,7 @@ public class PushRegistration extends BaseEntity {
         this.registrationValue = target.value();
         this.targetHash = hash(target);
         this.active = true;
+        this.generation++;
         this.refreshedAt = Objects.requireNonNull(now);
     }
 
@@ -70,6 +74,7 @@ public class PushRegistration extends BaseEntity {
 
     public void deactivate() {
         this.active = false;
+        this.generation++;
     }
 
     public static String hash(PushTarget target) {

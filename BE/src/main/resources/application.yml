@@ -33,6 +33,9 @@ llm:
     min-memo-length: ${SUMMARY_MIN_MEMO_LENGTH:20}
 
 notification:
+  delivery:
+    enabled: ${PUSH_DELIVERY_ENABLED:true}
+    poll-delay-ms: ${PUSH_DELIVERY_POLL_DELAY_MS:1000}
   firebase:
     enabled: ${FCM_ENABLED:false}
     project-id: ${FIREBASE_PROJECT_ID:}
