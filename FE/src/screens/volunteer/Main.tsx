@@ -305,6 +305,9 @@ export function VolunteerProgress() {
     if (res !== undefined) visit.reload()
   }
 
+  /** BE는 동행 날짜 당일에만 체크인을 받아요. 다른 날에는 버튼을 막고 이유를 알려줘요 */
+  const notToday = !!d && !!v && !v.startedAt && d.date !== todayString()
+
   const buttonLabel = !v
     ? ''
     : !v.startedAt
@@ -369,6 +372,12 @@ export function VolunteerProgress() {
               <Icon name="won" size={20} />
               수납·약값·택시비는 동행받는 분이 직접 결제해요. 카드나 현금은 맡지 않아요.
             </div>
+            {notToday && d && (
+              <div className="row" role="status" style={{ gap: 10, alignItems: 'flex-start', padding: '12px 14px', borderRadius: 16, background: 'var(--brand-accent-soft)', color: 'var(--accent-ink)', fontSize: 14, lineHeight: 1.6 }}>
+                <Icon name="calendar" size={20} />
+                동행 당일({formatDate(d.date)})에 만나서 체크인할 수 있어요.
+              </div>
+            )}
             <ErrorText>{act.error}</ErrorText>
             <Spacer />
             <div className="row" style={{ gap: 10 }}>
@@ -386,7 +395,7 @@ export function VolunteerProgress() {
                   {v.hasSummary ? '진료 요약 보기' : '진료 메모 쓰기'}
                 </Button>
               ) : (
-                <Button className="fill" onClick={advance} disabled={act.pending}>
+                <Button className="fill" onClick={advance} disabled={act.pending || notToday}>
                   {act.pending ? '처리 중…' : buttonLabel}
                 </Button>
               )}
