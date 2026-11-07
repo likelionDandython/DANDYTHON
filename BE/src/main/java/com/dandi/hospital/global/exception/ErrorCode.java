@@ -39,7 +39,8 @@ public enum ErrorCode {
     SUMMARY_NOT_FOUND(HttpStatus.NOT_FOUND, "아직 진료 요약이 없습니다"),
 
     // 알림
-    PUSH_REGISTRATION_CONFLICT(HttpStatus.CONFLICT, "기기 등록정보가 충돌했습니다. 기기 정보를 확인하고 다시 시도해주세요");
+    PUSH_REGISTRATION_CONFLICT(HttpStatus.CONFLICT, "기기 등록정보가 충돌했습니다. 기기 정보를 확인하고 다시 시도해주세요"),
+    NOTIFICATION_NOT_FOUND(HttpStatus.NOT_FOUND, "알림을 찾을 수 없습니다");
 
     private final HttpStatus status;
     private final String message;
