@@ -54,7 +54,6 @@ public class VolunteerService {
                 Math.toIntExact(statistics.totalMinutes()), thanks);
     }
 
-    /** B(신청자 목록)에서 사용 가능: 프로필 엔티티 조회 */
     public Volunteer getByUserId(Long userId) {
         return volunteerRepository.findByUserId(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.VOLUNTEER_NOT_FOUND));
