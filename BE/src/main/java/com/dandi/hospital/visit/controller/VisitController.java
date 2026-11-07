@@ -8,6 +8,9 @@ import com.dandi.hospital.visit.dto.VisitTimeRequest;
 import com.dandi.hospital.visit.dto.StepUpdateRequest;
 import com.dandi.hospital.visit.dto.StepUpdateResponse;
 import com.dandi.hospital.visit.dto.CheckoutResponse;
+import com.dandi.hospital.visit.dto.ApproveResponse;
+import com.dandi.hospital.visit.dto.ApproveRequest;
+import com.dandi.hospital.visit.dto.CertificateResponse;
 import com.dandi.hospital.visit.dto.MemoSaveRequest;
 import com.dandi.hospital.visit.dto.MemoSaveResponse;
 import com.dandi.hospital.visit.service.VisitMemoService;
@@ -37,6 +40,12 @@ public class VisitController {
         return ApiResponse.ok(visitQueryService.getVisit(visitId, user == null ? null : user.id()));
     }
 
+    @GetMapping("/{visitId}/certificate")
+    public ApiResponse<CertificateResponse> getCertificate(
+            @PathVariable Long visitId, @AuthenticationPrincipal LoginUser user) {
+        return ApiResponse.ok(visitQueryService.getCertificate(visitId, user == null ? null : user.id()));
+    }
+
     @PostMapping("/{visitId}/checkin")
     public ApiResponse<CheckinResponse> checkin(
             @PathVariable Long visitId, @AuthenticationPrincipal LoginUser user,
@@ -50,6 +59,14 @@ public class VisitController {
             @PathVariable Long visitId, @AuthenticationPrincipal LoginUser user,
             @Valid @RequestBody StepUpdateRequest request) {
         return ApiResponse.ok(visitService.updateStep(visitId, user == null ? null : user.id(), request));
+    }
+
+    @PostMapping("/{visitId}/approve")
+    public ApiResponse<ApproveResponse> approve(
+            @PathVariable Long visitId, @AuthenticationPrincipal LoginUser user,
+            @Valid @RequestBody(required = false) ApproveRequest request) {
+        return ApiResponse.ok(visitService.approve(visitId, user == null ? null : user.id(),
+                request == null ? null : request.thanks()));
     }
 
     @PostMapping("/{visitId}/memo")

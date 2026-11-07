@@ -17,10 +17,12 @@ import java.util.List;
 
 @Entity
 @Table(name = "visits", uniqueConstraints = @UniqueConstraint(
-        name = "uk_visits_request_volunteer", columnNames = {"request_id", "volunteer_id"}))
+        name = "uk_visits_request_volunteer", columnNames = {"request_id", "volunteer_id"}),
+        indexes = @Index(name = "idx_visits_volunteer_approved", columnList = "volunteer_id, approved_at"))
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Visit extends BaseEntity {
+    public static final int MAX_THANKS_LENGTH = 1000;
     public static final int MAX_MEMO_LENGTH = 5000;
 
     @Id
@@ -67,7 +69,14 @@ public class Visit extends BaseEntity {
     private Long summaryMemoRevision;
     private LocalDateTime summarizedAt;
 
+    private Integer approvedMinutes;
     private LocalDateTime approvedAt;
+    private Long approvedBy;
+
+    @Column(length = MAX_THANKS_LENGTH)
+    private String thanks;
+
+    private LocalDateTime thanksCreatedAt;
 
     @Version
     private Long version;
@@ -128,6 +137,21 @@ public class Visit extends BaseEntity {
             throw new CustomException(ErrorCode.INVALID_INPUT);
         endedAt = time;
         recognizedMinutes = minutes;
+    }
+
+    public void approve(Long requesterId, LocalDateTime time, String message) {
+        if (isApproved() || startedAt == null || endedAt == null || recognizedMinutes == null)
+            throw new CustomException(ErrorCode.INVALID_STATUS);
+        if (requesterId == null || time == null || time.isBefore(endedAt)
+                || recognizedMinutes < 0 || recognizedMinutes > 480 || recognizedMinutes % 30 != 0
+                || (message != null && message.length() > MAX_THANKS_LENGTH))
+            throw new CustomException(ErrorCode.INVALID_INPUT);
+        String normalized = message == null ? null : message.strip();
+        approvedMinutes = recognizedMinutes;
+        approvedAt = time;
+        approvedBy = requesterId;
+        thanks = normalized == null || normalized.isEmpty() ? null : normalized;
+        thanksCreatedAt = thanks == null ? null : time;
     }
 
     public void saveMemo(boolean agreed, String content, LocalDateTime time) {

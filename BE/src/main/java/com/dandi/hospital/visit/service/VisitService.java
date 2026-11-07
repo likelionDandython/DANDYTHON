@@ -10,6 +10,7 @@ import com.dandi.hospital.visit.dto.CheckinResponse;
 import com.dandi.hospital.visit.dto.StepUpdateRequest;
 import com.dandi.hospital.visit.dto.StepUpdateResponse;
 import com.dandi.hospital.visit.dto.CheckoutResponse;
+import com.dandi.hospital.visit.dto.ApproveResponse;
 import com.dandi.hospital.visit.entity.Visit;
 import com.dandi.hospital.visit.repository.VisitRepository;
 import com.dandi.hospital.volunteer.entity.Volunteer;
@@ -120,14 +121,46 @@ public class VisitService {
         return CheckoutResponse.from(visit);
     }
 
+    @Transactional
+    public ApproveResponse approve(Long visitId, Long actorId) {
+        return approve(visitId, actorId, null);
+    }
+
+    @Transactional
+    public ApproveResponse approve(Long visitId, Long actorId, String thanks) {
+        accessPolicy.requireAuthenticated(actorId);
+        LockedVisit locked = loadForUpdate(visitId);
+        Visit visit = locked.visit();
+        Request request = locked.request();
+        accessPolicy.requireRequester(request, actorId);
+        if (request.getStatus() != RequestStatus.COMPLETED && request.getStatus() != RequestStatus.APPROVED)
+            throw new CustomException(ErrorCode.INVALID_STATUS);
+        if (visit.isApproved())
+            return ApproveResponse.from(visit, request.getStatus());
+        if (request.getStatus() != RequestStatus.COMPLETED)
+            throw new CustomException(ErrorCode.INVALID_STATUS);
+
+        visit.approve(actorId, LocalDateTime.now(visitClock).withNano(0), thanks);
+        boolean allApproved = visitRepository.findAllByRequestIdForUpdate(request.getId()).stream()
+                .allMatch(Visit::isApproved);
+        if (allApproved)
+            requestService.changeStatus(request.getId(), RequestStatus.COMPLETED, RequestStatus.APPROVED);
+        return ApproveResponse.from(visit, request.getStatus());
+    }
+
     private LockedVisit loadForUpdate(Long visitId, Long actorId) {
         accessPolicy.requireAuthenticated(actorId);
+        LockedVisit locked = loadForUpdate(visitId);
+        accessPolicy.requireVolunteer(locked.visit(), actorId);
+        return locked;
+    }
+
+    private LockedVisit loadForUpdate(Long visitId) {
         Long requestId = visitRepository.findRequestIdByVisitId(visitId)
                 .orElseThrow(() -> new CustomException(ErrorCode.VISIT_NOT_FOUND));
         Request request = requestService.getForUpdate(requestId);
         Visit visit = visitRepository.findByIdForUpdate(visitId)
                 .orElseThrow(() -> new CustomException(ErrorCode.VISIT_NOT_FOUND));
-        accessPolicy.requireVolunteer(visit, actorId);
         return new LockedVisit(visit, request);
     }
 
