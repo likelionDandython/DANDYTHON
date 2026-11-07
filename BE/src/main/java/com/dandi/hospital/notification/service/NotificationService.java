@@ -23,19 +23,21 @@ public class NotificationService {
     private final UserRepository users;
     private final PushDeliveryRepository deliveries;
     private final PushDeliveryService deliveryService;
+    private final NotificationEligibility eligibility;
     private final Clock clock;
     private final TransactionTemplate transactions;
 
     public NotificationService(UserNotificationRepository notifications, NotificationSettingsRepository settings,
             PushRegistrationRepository registrations, UserRepository users, PushDeliveryRepository deliveries,
             PushDeliveryService deliveryService,
-            Clock clock, PlatformTransactionManager manager) {
+            NotificationEligibility eligibility, Clock clock, PlatformTransactionManager manager) {
         this.notifications = notifications;
         this.settings = settings;
         this.registrations = registrations;
         this.users = users;
         this.deliveries = deliveries;
         this.deliveryService = deliveryService;
+        this.eligibility = eligibility;
         this.clock = clock;
         this.transactions = new TransactionTemplate(manager);
         this.transactions.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
@@ -43,6 +45,7 @@ public class NotificationService {
 
     public Long send(NotificationCommand command) {
         Created created = transactions.execute(status -> {
+            if (!eligibility.permits(command)) return null;
             users.findByIdForUpdate(command.recipientUserId()).orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
             var existing = notifications.findByEventKeyAndUserId(command.eventKey(), command.recipientUserId());
             if (existing.isPresent()) return new Created(existing.get(), List.of());

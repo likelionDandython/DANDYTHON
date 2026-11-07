@@ -22,6 +22,7 @@ public class PushDeliveryService {
     private final NotificationSettingsRepository settings;
     private final PushClient push;
     private final Clock clock;
+    private final NotificationEligibility eligibility;
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void deliver(Long id) {
@@ -34,6 +35,8 @@ public class PushDeliveryService {
         if (notification == null || registration == null || !registration.isActive()
                 || !registration.getUserId().equals(notification.getUserId())
                 || registration.getGeneration() != delivery.getRegistrationGeneration()
+                || !eligibility.permits(new NotificationCommand(notification.getEventKey(), notification.getType(),
+                    notification.getUserId(), notification.getRequestId(), notification.getVisitId()))
                 || !settings.findById(notification.getUserId()).map(NotificationSettings::toDto)
                     .orElseGet(NotificationSettingsDto::defaults).allows(notification.getType())) {
             delivery.finish(PushDelivery.Status.SKIPPED, now, null);

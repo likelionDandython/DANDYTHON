@@ -21,6 +21,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
 import java.time.LocalDateTime;
+import com.dandi.hospital.notification.dto.NotificationCommand;
+import com.dandi.hospital.notification.entity.NotificationType;
+import com.dandi.hospital.notification.event.NotificationEvents;
+import org.springframework.context.ApplicationEventPublisher;
 
 @Service
 @RequiredArgsConstructor
@@ -32,6 +36,7 @@ public class VisitService {
     private final VisitAccessPolicy accessPolicy;
     private final Clock visitClock;
     private final RecognizedMinutesCalculator minutesCalculator;
+    private final ApplicationEventPublisher events;
 
     @Transactional
     public VisitCreateResponse create(Request request, Volunteer volunteer) {
@@ -82,6 +87,7 @@ public class VisitService {
         visit.checkin(time);
         if (request.getStatus() == RequestStatus.CONFIRMED)
             requestService.changeStatus(request.getId(), RequestStatus.CONFIRMED, RequestStatus.IN_PROGRESS);
+        notify(NotificationType.DEPARTURE, request.getGuardianId(), visit, "departure");
         return new CheckinResponse(visit.getId(), visit.getStartedAt());
     }
 
@@ -93,7 +99,18 @@ public class VisitService {
         if (locked.request().getStatus() != RequestStatus.IN_PROGRESS)
             throw new CustomException(ErrorCode.INVALID_STATUS);
         Visit visit = locked.visit();
-        visit.updateStep(update.step(), update.done(), LocalDateTime.now(visitClock).withNano(0));
+        boolean changed = visit.updateStep(update.step(), update.done(), LocalDateTime.now(visitClock).withNano(0));
+        if (changed && update.done()) {
+            NotificationType type = switch (update.step()) {
+                case MEET -> NotificationType.DEPARTURE;
+                case RECEPTION -> NotificationType.ARRIVAL;
+                case TREATMENT -> NotificationType.TREATMENT_DONE;
+                case SEE_OFF -> NotificationType.HOMECOMING;
+                default -> NotificationType.WAITING;
+            };
+            String suffix = type == NotificationType.HOMECOMING ? "homecoming" : "step:" + update.step();
+            notify(type, locked.request().getGuardianId(), visit, suffix);
+        }
         return new StepUpdateResponse(visit.getId(), visit.getStep());
     }
 
@@ -118,6 +135,7 @@ public class VisitService {
                 .allMatch(participant -> participant.getEndedAt() != null);
         if (allEnded)
             requestService.changeStatus(request.getId(), RequestStatus.IN_PROGRESS, RequestStatus.COMPLETED);
+        notify(NotificationType.HOMECOMING, request.getGuardianId(), visit, "homecoming");
         return CheckoutResponse.from(visit);
     }
 
@@ -145,7 +163,13 @@ public class VisitService {
                 .allMatch(Visit::isApproved);
         if (allApproved)
             requestService.changeStatus(request.getId(), RequestStatus.COMPLETED, RequestStatus.APPROVED);
+        notify(NotificationType.VISIT_APPROVED, visit.getVolunteerId(), visit, "approved");
         return ApproveResponse.from(visit, request.getStatus());
+    }
+
+    private void notify(NotificationType type, Long recipient, Visit visit, String suffix) {
+        NotificationEvents.publish(events, new NotificationCommand("visit:" + visit.getId() + ":" + suffix,
+                type, recipient, visit.getRequestId(), visit.getId()));
     }
 
     private LockedVisit loadForUpdate(Long visitId, Long actorId) {

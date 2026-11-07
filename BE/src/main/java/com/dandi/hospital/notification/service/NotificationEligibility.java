@@ -1,0 +1,52 @@
+package com.dandi.hospital.notification.service;
+
+import com.dandi.hospital.global.enums.*;
+import com.dandi.hospital.notification.dto.NotificationCommand;
+import com.dandi.hospital.notification.entity.NotificationType;
+import com.dandi.hospital.request.entity.RequestTargetType;
+import com.dandi.hospital.request.repository.RequestRepository;
+import com.dandi.hospital.user.entity.ConsentItem;
+import com.dandi.hospital.user.repository.ConsentRepository;
+import com.dandi.hospital.visit.repository.VisitRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Objects;
+
+@Service
+@RequiredArgsConstructor
+@Transactional(readOnly = true)
+public class NotificationEligibility {
+    private final RequestRepository requests;
+    private final VisitRepository visits;
+    private final ConsentRepository consents;
+
+    public boolean permits(NotificationCommand command) {
+        var request = requests.findById(command.requestId()).orElse(null);
+        if (request == null || request.getStatus() == RequestStatus.CANCELED || command.visitId() == null) return false;
+        var visit = visits.findById(command.visitId()).orElse(null);
+        if (visit == null || !visit.getRequestId().equals(request.getId())) return false;
+        if (command.type() == NotificationType.VISIT_APPROVED)
+            return visit.isApproved() && visit.getVolunteerId().equals(command.recipientUserId());
+        if (!request.getGuardianId().equals(command.recipientUserId()) || visit.getStartedAt() == null) return false;
+        if (command.type() == NotificationType.SUMMARY_READY)
+            return visit.isConsent() && visit.hasSummary() && Objects.equals(visit.getSummaryMemoRevision(), visit.getMemoRevision())
+                    && command.eventKey().equals("visit:" + visit.getId() + ":summary:" + visit.getMemoRevision())
+                    && agreed(request.getGuardianId(), ConsentItem.HEALTH_INFO)
+                    && agreed(request.getGuardianId(), ConsentItem.SUMMARY_RECEIVE)
+                    && (request.getTargetType() == RequestTargetType.SELF || agreed(request.getGuardianId(), ConsentItem.SUMMARY_SHARE));
+        return switch (command.type()) {
+            case DEPARTURE, WAITING -> true;
+            case ARRIVAL -> visit.getChecklist().stream().anyMatch(item -> item.step() == VisitStep.RECEPTION && item.done());
+            case TREATMENT_DONE -> visit.getChecklist().stream().anyMatch(item -> item.step() == VisitStep.TREATMENT && item.done());
+            case HOMECOMING -> visit.getEndedAt() != null || visit.getChecklist().stream()
+                    .anyMatch(item -> item.step() == VisitStep.SEE_OFF && item.done());
+            default -> false;
+        };
+    }
+
+    private boolean agreed(Long userId, ConsentItem item) {
+        return consents.findByUserIdAndItem(userId, item).map(consent -> consent.isAgreed()).orElse(false);
+    }
+}
