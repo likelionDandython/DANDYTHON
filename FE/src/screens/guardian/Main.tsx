@@ -258,11 +258,12 @@ export function GuardianApply() {
         <h2 className="t-h2" style={{ fontSize: 17 }}>
           언제, 어디서 만날까요
         </h2>
-        <div className="row" style={{ gap: 12, alignItems: 'flex-end' }}>
-          <div style={{ flex: 1.3, minWidth: 0 }}>
+        {/* 좁은 화면에서는 시간이 다음 줄로 내려가요 (날짜·시간 칸이 카드 밖으로 나가지 않게) */}
+        <div className="row" style={{ gap: 12, alignItems: 'flex-end', flexWrap: 'wrap' }}>
+          <div style={{ flex: '1.3 1 150px', minWidth: 0 }}>
             <Field label="날짜" type="date" min={todayString()} value={date} onChange={(e) => setDate(e.target.value)} />
           </div>
-          <div className="fill">
+          <div style={{ flex: '1 1 120px', minWidth: 0 }}>
             <Field label="시간" type="time" value={meetTime} onChange={(e) => setMeetTime(e.target.value)} />
           </div>
         </div>

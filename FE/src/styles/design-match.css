@@ -72,3 +72,17 @@ body { word-break: keep-all; }
 
 .notice--info{background:#DDF3EC;color:#3c2a25;font-weight:500}
 .notice--info svg{color:#0E5F56}
+
+/* 날짜·시간 입력: iOS Safari 는 기본 모양 때문에 칸 밖으로 넓어지므로 기본 모양을 끄고 칸에 맞춰요 */
+.field__box { min-width: 0; }
+.field__input[type='date'],
+.field__input[type='time'] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  min-width: 0;
+  display: block;
+  text-align: left;
+}
+.field__input[type='date']::-webkit-date-and-time-value,
+.field__input[type='time']::-webkit-date-and-time-value { text-align: left; }
