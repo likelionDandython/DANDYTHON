@@ -59,20 +59,25 @@ public class PushRegistration extends BaseEntity {
     }
 
     public void refresh(Long userId, PushTarget target, LocalDateTime now) {
-        this.userId = Objects.requireNonNull(userId);
+        Objects.requireNonNull(userId);
+        Objects.requireNonNull(target);
+        Objects.requireNonNull(now);
+        boolean bindingChanged = !active || !Objects.equals(this.userId, userId) || !hasTarget(target);
+        this.userId = userId;
         this.registrationType = target.type();
         this.registrationValue = target.value();
         this.targetHash = hash(target);
         this.active = true;
-        this.generation++;
-        this.refreshedAt = Objects.requireNonNull(now);
+        if (bindingChanged) this.generation++;
+        this.refreshedAt = now;
     }
 
     public boolean hasTarget(PushTarget target) {
-        return registrationType == target.type() && registrationValue.equals(target.value());
+        return registrationType == target.type() && Objects.equals(registrationValue, target.value());
     }
 
     public void deactivate() {
+        if (!active) return;
         this.active = false;
         this.generation++;
     }

@@ -67,7 +67,9 @@ public class PushRegistrationService {
             if (!users.existsById(userId)) throw new CustomException(ErrorCode.USER_NOT_FOUND);
             registrations.findByDeviceIdForUpdate(deviceId.toString()).ifPresent(registration -> {
                 if (!registration.getUserId().equals(userId)) throw new CustomException(ErrorCode.FORBIDDEN);
-                registration.deactivate();
+                // Releasing an owned device removes the old binding; a new account can register a rotated target.
+                // Delivery jobs retain the old registration ID and cannot follow a replacement binding.
+                registrations.delete(registration);
             });
         });
     }
