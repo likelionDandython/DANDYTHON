@@ -36,7 +36,10 @@ public enum ErrorCode {
     VISIT_NOT_FOUND(HttpStatus.NOT_FOUND, "동행 기록을 찾을 수 없습니다"),
     CONSENT_REQUIRED(HttpStatus.BAD_REQUEST, "동행받는 분의 현장 동의와 건강정보 처리 동의가 필요합니다"),
     SUMMARY_CONSENT_REQUIRED(HttpStatus.FORBIDDEN, "진료 요약 수신·공유 동의가 필요합니다"),
-    SUMMARY_NOT_FOUND(HttpStatus.NOT_FOUND, "아직 진료 요약이 없습니다");
+    SUMMARY_NOT_FOUND(HttpStatus.NOT_FOUND, "아직 진료 요약이 없습니다"),
+
+    // 알림
+    PUSH_REGISTRATION_CONFLICT(HttpStatus.CONFLICT, "기기 등록정보가 충돌했습니다. 기기 정보를 확인하고 다시 시도해주세요");
 
     private final HttpStatus status;
     private final String message;
