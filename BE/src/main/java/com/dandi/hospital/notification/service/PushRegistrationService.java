@@ -60,6 +60,18 @@ public class PushRegistrationService {
         throw new CustomException(ErrorCode.PUSH_REGISTRATION_CONFLICT);
     }
 
+    public void unregister(Long userId, UUID deviceId) {
+        if (userId == null) throw new CustomException(ErrorCode.UNAUTHORIZED);
+        if (deviceId == null) throw new CustomException(ErrorCode.INVALID_INPUT);
+        transactions.executeWithoutResult(status -> {
+            if (!users.existsById(userId)) throw new CustomException(ErrorCode.USER_NOT_FOUND);
+            registrations.findByDeviceIdForUpdate(deviceId.toString()).ifPresent(registration -> {
+                if (!registration.getUserId().equals(userId)) throw new CustomException(ErrorCode.FORBIDDEN);
+                registration.deactivate();
+            });
+        });
+    }
+
     private PushRegistrationResponse registerInTransaction(Long userId, String deviceId, PushTarget target) {
         if (!users.existsById(userId)) throw new CustomException(ErrorCode.USER_NOT_FOUND);
 

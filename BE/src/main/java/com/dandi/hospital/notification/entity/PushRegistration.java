@@ -68,6 +68,10 @@ public class PushRegistration extends BaseEntity {
         return registrationType == target.type() && registrationValue.equals(target.value());
     }
 
+    public void deactivate() {
+        this.active = false;
+    }
+
     public static String hash(PushTarget target) {
         try {
             byte[] value = (target.type().name() + ":" + target.value()).getBytes(StandardCharsets.UTF_8);

@@ -18,6 +18,12 @@ import java.util.UUID;
 public class PushRegistrationController {
     private final PushRegistrationService registrationService;
 
+    @DeleteMapping("/{deviceId}")
+    public ApiResponse<Void> unregister(@PathVariable UUID deviceId, @AuthenticationPrincipal LoginUser user) {
+        registrationService.unregister(user == null ? null : user.id(), deviceId);
+        return ApiResponse.ok();
+    }
+
     @PutMapping("/{deviceId}")
     public ApiResponse<PushRegistrationResponse> register(
             @PathVariable UUID deviceId, @AuthenticationPrincipal LoginUser user,
