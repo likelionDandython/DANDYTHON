@@ -4,6 +4,7 @@ import com.dandi.hospital.global.exception.CustomException;
 import com.dandi.hospital.global.exception.ErrorCode;
 import com.dandi.hospital.user.entity.User;
 import com.dandi.hospital.user.repository.UserRepository;
+import com.dandi.hospital.visit.service.VisitStatisticsService;
 import com.dandi.hospital.volunteer.dto.VolunteerProfileRequest;
 import com.dandi.hospital.volunteer.dto.VolunteerProfileResponse;
 import com.dandi.hospital.volunteer.dto.VolunteerProfileSaveResponse;
@@ -13,7 +14,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
+import java.time.format.DateTimeFormatter;
 
 @Service
 @RequiredArgsConstructor
@@ -22,6 +23,7 @@ public class VolunteerService {
 
     private final VolunteerRepository volunteerRepository;
     private final UserRepository userRepository;
+    private final VisitStatisticsService visitStatisticsService;
 
     /** 프로필 생성·수정 (없으면 만들고 있으면 덮어쓰기) */
     @Transactional
@@ -43,15 +45,13 @@ public class VolunteerService {
         Volunteer v = volunteerRepository.findByUserId(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.VOLUNTEER_NOT_FOUND));
 
-        // TODO(C): Visit 쪽 집계 메서드 생기면 교체
-        //  visitCount   = VisitService.countApprovedByVolunteer(userId)
-        //  totalMinutes = VisitService.sumApprovedMinutesByVolunteer(userId)
-        //  thanks       = VisitService.getThanksByVolunteer(userId)
-        int visitCount = 0;
-        int totalMinutes = 0;
-        List<VolunteerProfileResponse.ThanksMessage> thanks = List.of();
-
-        return VolunteerProfileResponse.of(v, visitCount, totalMinutes, thanks);
+        var statistics = visitStatisticsService.getStatistics(userId);
+        var thanks = statistics.thanksMessages().stream()
+                .map(message -> new VolunteerProfileResponse.ThanksMessage(message.message(),
+                        message.createdAt().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)))
+                .toList();
+        return VolunteerProfileResponse.of(v, Math.toIntExact(statistics.visitCount()),
+                Math.toIntExact(statistics.totalMinutes()), thanks);
     }
 
     /** B(신청자 목록)에서 사용 가능: 프로필 엔티티 조회 */
