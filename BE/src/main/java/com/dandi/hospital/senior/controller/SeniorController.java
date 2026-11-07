@@ -9,16 +9,15 @@ import com.dandi.hospital.senior.service.SeniorService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+/** 역할 제한 없음 (보호자/봉사자 모드 전환). 본인 어르신만 조회됨 */
 @RestController
 @RequestMapping("/api/seniors")
 @RequiredArgsConstructor
-@PreAuthorize("hasRole('GUARDIAN')")
 public class SeniorController {
 
     private final SeniorService seniorService;
