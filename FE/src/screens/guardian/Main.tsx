@@ -787,14 +787,6 @@ export function GuardianMy() {
   const navigate = useNavigate()
   const { session, logout } = useAuth()
   const seniors = useApi(() => profileApi.mySeniors(), [])
-  const seniorOverrides = (() => {
-    try {
-      const raw = localStorage.getItem('hospital-companion.senior-overrides')
-      return raw ? (JSON.parse(raw) as Record<string, { name: string; age: number; phone: string; region: string }>) : {}
-    } catch {
-      return {}
-    }
-  })()
   return (
     <Screen footer={tabs}>
       <h1 className="t-h1">MY</h1>
@@ -809,29 +801,25 @@ export function GuardianMy() {
       </div>
       <Status loading={seniors.loading} error={seniors.error} />
       <div className="card card--list">
-        <Link to="/guardian/me/edit" className="list-item" style={{ paddingRight: 12 }}>
+        <div className="list-item" style={{ paddingRight: 12 }}>
           <Avatar size={44} />
           <div className="col fill">
             <span style={{ fontSize: 16, fontWeight: 700 }}>나 · {session?.name}</span>
             <span className="t-caption">내 병원 동행도 요청할 수 있어요</span>
           </div>
-          <Icon name="chev" size={20} color="var(--icon-muted)" />
-        </Link>
-        {(seniors.data ?? []).map((raw) => {
-          const s = { ...raw, ...(seniorOverrides[String(raw.seniorId)] ?? {}) }
-          return (
-            <Link key={s.seniorId} to={`/guardian/senior/edit?seniorId=${s.seniorId}`} className="list-item" style={{ paddingRight: 12 }}>
-              <Avatar size={44} />
-              <div className="col fill">
-                <span style={{ fontSize: 16, fontWeight: 700 }}>{s.name}</span>
-                <span className="t-caption">
-                  {s.age}세 · {s.region}
-                </span>
-              </div>
-              <Icon name="chev" size={20} color="var(--icon-muted)" />
-            </Link>
-          )
-        })}
+        </div>
+        {(seniors.data ?? []).map((s) => (
+          <div key={s.seniorId} className="list-item" style={{ paddingRight: 12 }}>
+            <Avatar size={44} />
+            <div className="col fill">
+              <span style={{ fontSize: 16, fontWeight: 700 }}>{s.name}</span>
+              <span className="t-caption">
+                {s.age}세 · {s.region}
+              </span>
+            </div>
+            <Icon name="chev" size={20} color="var(--icon-muted)" />
+          </div>
+        ))}
       </div>
       <div className="card card--list">
         <Link to="/guardian/notifications/settings" className="list-item row--between" style={{ paddingRight: 12 }}>
