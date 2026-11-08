@@ -15,6 +15,7 @@ public enum NotificationType {
     VISIT_APPROVED("봉사시간 승인", "동행 봉사시간이 승인됐어요"),
     APPLICATION_RECEIVED("새 동행 신청", "동행 요청에 새로운 신청이 도착했어요"),
     APPLICATION_ACCEPTED("동행 신청 수락", "신청한 동행이 수락됐어요"),
+    APPLICATION_CLOSED("동행 모집 마감", "다른 봉사자와 매칭되어 동행 모집이 마감됐어요"),
     MATCH_CONFIRMED("동행 확정", "동행 인원이 모여 매칭이 확정됐어요"),
     APPLICATION_CANCELED("동행 신청 취소", "동행 신청이 취소됐어요"),
     REQUEST_CANCELED("동행 요청 취소", "신청한 동행 요청이 취소됐어요");

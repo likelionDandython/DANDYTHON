@@ -16,6 +16,7 @@ import java.time.Duration;
 public class FirebaseProperties {
     private boolean enabled;
     private String projectId = "";
+    private String credentialsJson = "";
     @NotNull
     private Duration connectTimeout = Duration.ofSeconds(3);
     @NotNull

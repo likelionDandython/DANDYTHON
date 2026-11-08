@@ -191,16 +191,20 @@ public class ApplicationService {
         if (acceptedCount == request.getHelpersNeeded()) {
             request.changeStatus(RequestStatus.RECRUITING, RequestStatus.CONFIRMED);
             applicationRepository.findAllByRequestIdAndStatus(request.getId(), ApplicationStatus.PENDING)
-                    .forEach(a -> a.changeStatus(ApplicationStatus.PENDING, ApplicationStatus.CLOSED));
+                    .forEach(a -> {
+                        a.changeStatus(ApplicationStatus.PENDING, ApplicationStatus.CLOSED);
+                        notify(NotificationType.APPLICATION_CLOSED, a.getVolunteerId(), requestId, null, a.getId(),
+                                "application:" + a.getId() + ":closed:" + applicationId);
+                    });
             String eventKey = "request:" + requestId + ":confirmed:" + applicationId;
             notify(NotificationType.MATCH_CONFIRMED, request.getGuardianId(), requestId, visit.getId(), applicationId, eventKey);
             visitRepository.findAllByRequestIdOrderByIdAsc(requestId).forEach(participant ->
                     notify(NotificationType.MATCH_CONFIRMED, participant.getVolunteerId(), requestId,
                             participant.getId(), applicationId, eventKey));
+        } else {
+            notify(NotificationType.APPLICATION_ACCEPTED, volunteerUserId, requestId, visit.getId(), applicationId,
+                    "application:" + applicationId + ":accepted");
         }
-
-        notify(NotificationType.APPLICATION_ACCEPTED, volunteerUserId, requestId, visit.getId(), applicationId,
-                "application:" + applicationId + ":accepted");
 
         return new AcceptResult(request.getId(), request.getStatus(), visit.getId());
     }

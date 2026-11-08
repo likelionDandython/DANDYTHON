@@ -39,6 +39,7 @@ notification:
   firebase:
     enabled: ${FCM_ENABLED:false}
     project-id: ${FIREBASE_PROJECT_ID:}
+    credentials-json: ${FIREBASE_CREDENTIALS_JSON:}
     connect-timeout: ${FCM_CONNECT_TIMEOUT:3s}
     read-timeout: ${FCM_READ_TIMEOUT:5s}
     write-timeout: ${FCM_WRITE_TIMEOUT:5s}

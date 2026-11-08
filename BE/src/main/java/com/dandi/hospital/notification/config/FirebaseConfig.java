@@ -4,6 +4,7 @@ import com.dandi.hospital.notification.client.DisabledPushClient;
 import com.dandi.hospital.notification.client.FcmPushClient;
 import com.dandi.hospital.notification.client.PushClient;
 import com.google.auth.oauth2.GoogleCredentials;
+import com.google.auth.oauth2.ServiceAccountCredentials;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.FirebaseOptions;
 import com.google.firebase.messaging.FirebaseMessaging;
@@ -15,6 +16,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import java.io.IOException;
+import java.io.ByteArrayInputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
 @Configuration(proxyBeanMethods = false)
@@ -23,12 +26,7 @@ public class FirebaseConfig {
     @Bean(name = "notificationFirebaseApp", destroyMethod = "delete")
     @ConditionalOnProperty(prefix = "notification.firebase", name = "enabled", havingValue = "true")
     public FirebaseApp notificationFirebaseApp(FirebaseProperties properties) {
-        GoogleCredentials credentials;
-        try {
-            credentials = GoogleCredentials.getApplicationDefault();
-        } catch (IOException e) {
-            throw new IllegalStateException("Firebase credentials are unavailable. Configure Application Default Credentials.");
-        }
+        GoogleCredentials credentials = credentials(properties);
         FirebaseOptions options = FirebaseOptions.builder()
                 .setCredentials(credentials)
                 .setProjectId(properties.getProjectId().strip())
@@ -37,6 +35,21 @@ public class FirebaseConfig {
                 .setWriteTimeout(Math.toIntExact(properties.getWriteTimeout().toMillis()))
                 .build();
         return FirebaseApp.initializeApp(options, "hospital-notification-" + UUID.randomUUID());
+    }
+
+    private GoogleCredentials credentials(FirebaseProperties properties) {
+        try {
+            String json = properties.getCredentialsJson();
+            if (json != null && !json.isBlank()) {
+                try (var stream = new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8))) {
+                    return ServiceAccountCredentials.fromStream(stream);
+                }
+            }
+            return GoogleCredentials.getApplicationDefault();
+        } catch (IOException | RuntimeException e) {
+            // Credential parser messages may contain private key material or file paths.
+            throw new IllegalStateException("Firebase credentials are unavailable. Configure FIREBASE_CREDENTIALS_JSON or Application Default Credentials.");
+        }
     }
 
     @Bean(name = "notificationFirebaseMessaging")

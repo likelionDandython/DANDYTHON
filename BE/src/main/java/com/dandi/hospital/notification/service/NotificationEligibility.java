@@ -29,7 +29,7 @@ public class NotificationEligibility {
         var request = requests.findById(command.requestId()).orElse(null);
         if (request == null) return false;
         if (switch (command.type()) {
-            case APPLICATION_RECEIVED, APPLICATION_ACCEPTED, MATCH_CONFIRMED, APPLICATION_CANCELED, REQUEST_CANCELED -> true;
+            case APPLICATION_RECEIVED, APPLICATION_ACCEPTED, APPLICATION_CLOSED, MATCH_CONFIRMED, APPLICATION_CANCELED, REQUEST_CANCELED -> true;
             default -> false;
         }) return permitsMatching(command, request);
         if (request.getStatus() == RequestStatus.CANCELED || command.visitId() == null) return false;
@@ -71,6 +71,8 @@ public class NotificationEligibility {
                     && application.getStatus() == ApplicationStatus.PENDING;
             case APPLICATION_ACCEPTED -> applicant && request.getStatus() != RequestStatus.CANCELED
                     && application.getStatus() == ApplicationStatus.ACCEPTED;
+            case APPLICATION_CLOSED -> applicant && application.getStatus() == ApplicationStatus.CLOSED
+                    && (request.getStatus() == RequestStatus.CONFIRMED || request.getStatus() == RequestStatus.IN_PROGRESS);
             case MATCH_CONFIRMED -> (request.getStatus() == RequestStatus.CONFIRMED || request.getStatus() == RequestStatus.IN_PROGRESS)
                     && application.getStatus() == ApplicationStatus.ACCEPTED
                     && (owner || applications.findAllByRequestIdAndStatus(request.getId(), ApplicationStatus.ACCEPTED)
