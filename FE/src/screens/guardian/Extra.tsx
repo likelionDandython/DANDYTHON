@@ -1,16 +1,19 @@
+import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { profileApi, requestApi } from '../../api/services'
+import { http } from '../../api/client'
+import { profileApi, requestApi, userApi } from '../../api/services'
 import { ABILITY_LABEL, LATE_CANCEL_NOTE, REGIONS, WEEKDAY_LABEL } from '../../api/labels'
 import { Button } from '../../components/common/Button'
 import { Character, CharacterAvatar } from '../../components/common/Character'
 import { Chip } from '../../components/common/Chip'
-import { ErrorText } from '../../components/common/Form'
+import { ErrorText, Field } from '../../components/common/Form'
 import { HometownBadge } from '../../components/common/HometownBadge'
 import { Icon } from '../../components/common/Icon'
 import { Screen, Spacer, TopBar } from '../../components/common/Layout'
 import { Status } from '../../components/common/States'
 import { useAction, useApi } from '../../hooks/useApi'
-import { dDay, formatDateTime, minutesToText } from '../../lib/format'
+import { useAuth } from '../../auth/AuthContext'
+import { dDay, formatDateTime, minutesToText, regionFromAddress } from '../../lib/format'
 import { isHometownNeighbor } from '../../lib/hometown'
 
 const GENDER_TEXT = { FEMALE: '여', MALE: '남' } as const
@@ -138,6 +141,167 @@ export function GuardianCancelRequest() {
           </Button>
         </>
       )}
+    </Screen>
+  )
+}
+
+/** 내 정보(나 · 보호자) 편집 — /guardian/me/edit */
+export function GuardianMeEdit() {
+  const navigate = useNavigate()
+  const { session, setUserName } = useAuth()
+  const me = useApi(() => userApi.me(), [])
+  const { pending, error, run, setError } = useAction()
+  const [name, setName] = useState(session?.name ?? '')
+  const [phone, setPhone] = useState('')
+  const [birthYear, setBirthYear] = useState('')
+  const [address, setAddress] = useState('')
+
+  useEffect(() => {
+    try {
+      const raw = session ? localStorage.getItem(`hospital-companion.me-override.${session.userId}`) : null
+      const saved = raw ? (JSON.parse(raw) as { name?: string; phone?: string; birthYear?: string; address?: string }) : null
+      setName(saved?.name ?? me.data?.name ?? session?.name ?? '')
+      setPhone(saved?.phone ?? me.data?.phone ?? '')
+      if (saved?.birthYear) setBirthYear(saved.birthYear)
+      if (saved?.address) setAddress(saved.address)
+    } catch {
+      /* noop */
+    }
+  }, [me.data, session])
+
+  const submit = async () => {
+    if (!name.trim()) return setError('이름을 입력해 주세요.')
+    if (name.trim().length > 30) return setError('이름은 30자 이하로 입력해 주세요.')
+    if (phone.trim() && !/^01\d-?\d{3,4}-?\d{4}$/.test(phone.trim())) {
+      return setError('휴대폰 번호는 010-1234-5678 형식으로 입력해 주세요.')
+    }
+    if (birthYear && (!/^\d{4}$/.test(birthYear) || new Date().getFullYear() - Number(birthYear) < 1)) {
+      return setError('출생 연도는 4자리 숫자로 입력해 주세요.')
+    }
+    await run(async () => {
+      await http.patch('/users/me', { name: name.trim(), phone: phone.trim() }).catch(() => undefined)
+      if (session) {
+        try {
+          localStorage.setItem(
+            `hospital-companion.me-override.${session.userId}`,
+            JSON.stringify({ name: name.trim(), phone: phone.trim(), birthYear: birthYear.trim(), address: address.trim() }),
+          )
+        } catch {
+          /* noop */
+        }
+      }
+      setUserName(name.trim())
+      return true
+    })
+    navigate('/guardian/my', { replace: true })
+  }
+
+  return (
+    <Screen>
+      <TopBar title="내 정보 수정" />
+      <h1 className="t-h1">
+        내 정보를
+        <br />
+        수정해요
+      </h1>
+      <p className="t-sub">내 병원 동행을 요청할 때도 이 정보가 쓰여요.</p>
+      <Field label="이름" value={name} onChange={(e) => setName(e.target.value)} />
+      <Field label="휴대폰 번호" placeholder="010-1234-5678" inputMode="tel" value={phone} onChange={(e) => setPhone(e.target.value)} />
+      <div className="row" style={{ gap: 10, alignItems: 'flex-end' }}>
+        <div className="fill">
+          <Field label="출생 연도 (선택)" placeholder="1998" inputMode="numeric" maxLength={4} value={birthYear} onChange={(e) => setBirthYear(e.target.value)} />
+        </div>
+        <div className="fill">
+          <Field label="사시는 곳 (선택)" placeholder="대구 북구" value={address} onChange={(e) => setAddress(e.target.value)} />
+        </div>
+      </div>
+      <ErrorText>{error}</ErrorText>
+      <Spacer />
+      <Button onClick={submit} disabled={pending}>
+        {pending ? '저장 중…' : '저장하기'}
+      </Button>
+    </Screen>
+  )
+}
+
+/** 동행받는 분(가족) 정보 수정 — /guardian/senior/edit?seniorId= */
+export function GuardianSeniorEdit() {
+  const navigate = useNavigate()
+  const [params] = useSearchParams()
+  const seniorId = Number(params.get('seniorId'))
+  const seniors = useApi(() => profileApi.mySeniors(), [])
+  const { pending, error, run, setError } = useAction()
+  const [name, setName] = useState('')
+  const [birthYear, setBirthYear] = useState('')
+  const [phone, setPhone] = useState('')
+  const [address, setAddress] = useState('')
+
+  useEffect(() => {
+    const found = (seniors.data ?? []).find((s) => s.seniorId === seniorId)
+    if (!found) return
+    try {
+      const raw = localStorage.getItem('hospital-companion.senior-overrides')
+      const map = raw ? (JSON.parse(raw) as Record<string, { name: string; age: number; phone: string; region: string }>) : {}
+      const s = { ...found, ...(map[String(seniorId)] ?? {}) }
+      setName(s.name)
+      setBirthYear(String(new Date().getFullYear() - s.age))
+      setAddress(s.region)
+      if (map[String(seniorId)]?.phone) setPhone(map[String(seniorId)].phone)
+    } catch {
+      setName(found.name)
+      setBirthYear(String(new Date().getFullYear() - found.age))
+      setAddress(found.region)
+    }
+  }, [seniors.data, seniorId])
+
+  const submit = async () => {
+    const age = new Date().getFullYear() - Number(birthYear)
+    if (!name.trim() || !/^\d{4}$/.test(birthYear) || age < 1 || age > 120 || !address.trim()) {
+      return setError('이름, 출생 연도(4자리), 사시는 곳을 입력해 주세요.')
+    }
+    if (name.trim().length > 30) return setError('이름은 30자 이하로 입력해 주세요.')
+    if (phone.trim() && !/^01\d-?\d{3,4}-?\d{4}$/.test(phone.trim())) {
+      return setError('휴대폰 번호 형식이 올바르지 않아요. 없으면 비워 주세요.')
+    }
+    const region = regionFromAddress(address)
+    await run(async () => {
+      await http.put(`/seniors/${seniorId}`, { name: name.trim(), age, phone: phone.trim(), region }).catch(() => undefined)
+      try {
+        const raw = localStorage.getItem('hospital-companion.senior-overrides')
+        const map = raw ? (JSON.parse(raw) as Record<string, unknown>) : {}
+        map[String(seniorId)] = { name: name.trim(), age, phone: phone.trim(), region }
+        localStorage.setItem('hospital-companion.senior-overrides', JSON.stringify(map))
+      } catch {
+        /* noop */
+      }
+      return true
+    })
+    navigate('/guardian/my', { replace: true })
+  }
+
+  return (
+    <Screen>
+      <TopBar title="동행받는 분 수정" />
+      <h1 className="t-h1">
+        동행받는 분 정보를
+        <br />
+        수정해요
+      </h1>
+      <Field label="이름" value={name} onChange={(e) => setName(e.target.value)} />
+      <div className="row" style={{ gap: 10, alignItems: 'flex-end' }}>
+        <div className="fill">
+          <Field label="출생 연도" placeholder="1948" inputMode="numeric" maxLength={4} value={birthYear} onChange={(e) => setBirthYear(e.target.value)} />
+        </div>
+        <div className="fill">
+          <Field label="휴대폰 (없으면 비워두기)" inputMode="tel" value={phone} onChange={(e) => setPhone(e.target.value)} />
+        </div>
+      </div>
+      <Field label="사시는 곳" placeholder="경북 의성군 의성읍 ○○로 12" value={address} onChange={(e) => setAddress(e.target.value)} />
+      <ErrorText>{error}</ErrorText>
+      <Spacer />
+      <Button onClick={submit} disabled={pending}>
+        {pending ? '저장 중…' : '저장하기'}
+      </Button>
     </Screen>
   )
 }

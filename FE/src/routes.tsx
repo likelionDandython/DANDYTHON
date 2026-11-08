@@ -3,7 +3,7 @@ import * as A from './screens/common/Account'
 import * as VM from './screens/volunteer/Main'
 import { VolunteerProfile } from './screens/volunteer/Profile'
 import { VolunteerCancel, VolunteerCertificate, VolunteerProfileDone } from './screens/volunteer/Extra'
-import { GuardianCancelRequest, GuardianVolunteerView } from './screens/guardian/Extra'
+import { GuardianCancelRequest, GuardianMeEdit, GuardianSeniorEdit, GuardianVolunteerView } from './screens/guardian/Extra'
 import { VolunteerMemoDone, VolunteerMemoFallback, VolunteerMemoWrite } from './screens/volunteer/Memo'
 import * as GM from './screens/guardian/Main'
 import { designRoutes } from './design/routes'
@@ -55,6 +55,8 @@ export const sections: AppSection[] = [
       { group: '메인', code: 'G05', name: '진료 결과 리포트', path: '/guardian/report', element: <GM.GuardianReport /> },
       { group: '메인', code: 'G06', name: '동행 기록', path: '/guardian/records', element: <GM.GuardianRecords /> },
       { group: '메인', code: 'G07', name: 'MY · 모드 전환', path: '/guardian/my', element: <GM.GuardianMy /> },
+      { group: '메인', code: 'G07-1', name: '내 정보 수정', path: '/guardian/me/edit', element: <GuardianMeEdit /> },
+      { group: '메인', code: 'G07-2', name: '동행받는 분 수정', path: '/guardian/senior/edit', element: <GuardianSeniorEdit /> },
     ],
   },
   {

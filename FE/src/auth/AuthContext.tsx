@@ -18,6 +18,7 @@ type AuthValue = {
   logout: () => void
   /** 프로필 완성 여부만 갱신 */
   setProfileCompleted: (v: boolean) => void
+  setUserName: (name: string) => void
   /** 지금 모드를 바꿔요 (첫 진입 약관을 마친 모드만) */
   setMode: (mode: Mode) => void
   /** 모드 첫 진입 약관을 마쳤어요 */
@@ -93,6 +94,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setSession(null)
   }, [])
   const setProfileCompleted = useCallback((v: boolean) => update((p) => ({ ...p, profileCompleted: v })), [update])
+  const setUserName = useCallback((name: string) => update((p) => ({ ...p, name })), [update])
   const setMode = useCallback((mode: Mode) => update((p) => ({ ...p, mode })), [update])
   const enterMode = useCallback(
     (mode: Mode) => update((p) => ({ ...p, mode, modes: p.modes.includes(mode) ? p.modes : [...p.modes, mode] })),
@@ -104,7 +106,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!load()) return
     userApi
       .me()
-      .then((me) => update((p) => ({ ...p, name: me?.name ?? p.name, profileCompleted: me?.profileCompleted ?? p.profileCompleted })))
+            .then((me) => {
+        let localName: string | undefined
+        try {
+          const s = load()
+          const raw = s ? localStorage.getItem(`hospital-companion.me-override.${s.userId}`) : null
+          localName = raw ? (JSON.parse(raw) as { name?: string }).name : undefined
+        } catch {
+          /* noop */
+        }
+        update((p) => ({ ...p, name: localName || me?.name || p.name, profileCompleted: me?.profileCompleted ?? p.profileCompleted }))
+      })
       .catch(() => undefined)
   }, [update])
 
@@ -115,8 +127,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [logout])
 
   const value = useMemo(
-    () => ({ session, login, logout, setProfileCompleted, setMode, enterMode }),
-    [session, login, logout, setProfileCompleted, setMode, enterMode],
+    () => ({ session, login, logout, setProfileCompleted, setUserName, setMode, enterMode }),
+    [session, login, logout, setProfileCompleted, setUserName, setMode, enterMode],
   )
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
