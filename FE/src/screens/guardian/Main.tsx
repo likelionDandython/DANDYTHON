@@ -718,7 +718,32 @@ export function GuardianReport() {
           </h1>
         </div>
       )}
-      {v && v.hasSummary === false && !localFallback && <p className="t-body">아직 봉사자가 진료 요약을 작성하지 않았어요.</p>}
+      {v && v.hasSummary === false && !localFallback && (
+        <div className="col" style={{ gap: 10 }}>
+          <p className="t-body">아직 봉사자가 진료 요약을 작성하지 않았어요.</p>
+          {canApprove && (
+            <div
+              className="row"
+              role="status"
+              style={{
+                gap: 10,
+                alignItems: 'flex-start',
+                padding: '12px 14px',
+                borderRadius: 16,
+                background: 'var(--brand-accent-soft)',
+                color: 'var(--accent-ink)',
+                fontSize: 13,
+                lineHeight: 1.55,
+              }}
+            >
+              <Icon name="shield" size={18} />
+              <span>
+                <strong>안내:</strong> 봉사시간을 승인하면 동행이 최종 마감되어 봉사자가 진료 메모·요약을 추가로 작성할 수 없어요. 진료 요약을 받으시려면 봉사자가 메모 작성을 마친 뒤에 승인해 주세요.
+              </span>
+            </div>
+          )}
+        </div>
+      )}
       {sum && (
         <p className="t-caption" style={{ margin: '0 4px', fontSize: 15, lineHeight: 1.6 }}>
           동행받는 분의 '괜찮다'는 말씀 뒤에 담긴 오늘의 진료 기록이에요
