@@ -52,9 +52,11 @@ function ProfileForm({ initial }: { initial: VolunteerProfileBody | null }) {
   const [abilities, setAbilities] = useState<string[]>(initial?.abilities ?? [])
 
   const submit = async () => {
-    const a = Number(age)
-    const g = Number(grade)
-    if (!a || !gender || !school.trim() || !major.trim() || !g || !hometown.trim() || !intro.trim()) {
+    const a = Number(String(age).replace(/[^\d]/g, ''))
+    const g = Number(String(grade).replace(/[^\d]/g, ''))
+    if (!String(age).trim() || !a) return setError('나이를 숫자로 입력해 주세요 (예: 21).')
+    if (!String(grade).trim() || !g) return setError('학년을 숫자로 입력해 주세요 (예: 2).')
+    if (!gender || !school.trim() || !major.trim() || !hometown.trim() || !intro.trim()) {
       return setError('기본 정보를 모두 채워 주세요. 다 채워야 동행을 신청할 수 있어요.')
     }
     if (a < 18) return setError('만 18세 이상부터 동행 봉사에 참여할 수 있어요.')
@@ -101,7 +103,7 @@ function ProfileForm({ initial }: { initial: VolunteerProfileBody | null }) {
       </div>
       <div className="row" style={{ gap: 10, alignItems: 'flex-end' }}>
         <div className="fill">
-          <Field label="나이" inputMode="numeric" value={age} onChange={(e) => setAge(e.target.value)} />
+          <Field label="나이" placeholder="예: 21" inputMode="numeric" value={age} onChange={(e) => setAge(e.target.value)} />
         </div>
         <div className="fill">
           <SelectField

@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { visitApi } from '../../api/services'
+import { requestApi, visitApi } from '../../api/services'
+import { useAuth } from '../../auth/AuthContext'
 import { Icon, type IconName } from '../../components/common/Icon'
 import { Screen, TopBar } from '../../components/common/Layout'
 import { Status } from '../../components/common/States'
@@ -40,6 +41,7 @@ const GROUPS = ['오늘', '어제', '이전'] as const
 /** 알림 목록 — /guardian/notifications (요청자) */
 export function NotificationList() {
   const navigate = useNavigate()
+  const { session } = useAuth()
   const list = useApi(() => notificationApi.list(), [])
   const action = useAction()
   // 눌러서 읽음 처리한 것을 바로 화면에 반영해요 (서버 응답을 기다리지 않아요)
@@ -55,10 +57,40 @@ export function NotificationList() {
       setReadIds((ids) => [...ids, n.notificationId])
       notificationApi.read(n.notificationId).catch(() => undefined)
     }
-    if (!n.visitId) { if (n.requestId) navigate(`/volunteer/request-detail?requestId=${n.requestId}`); return }
-    // 알림에는 visitId 만 있어서, 동행 현황 화면에 필요한 requestId 를 찾아서 이동해요
-    const visit = await action.run(() => visitApi.get(n.visitId as number))
-    if (visit) navigate(`/guardian/live?requestId=${visit.requestId}`)
+    // 1) 신청 도착·신청 취소 알림 → 요청자의 신청자 보기(수락) 화면으로 이동
+    if ((n.type === 'APPLICATION_RECEIVED' || n.type === 'APPLICATION_CANCELED') && n.requestId) {
+      navigate(`/guardian/applicants?requestId=${n.requestId}`)
+      return
+    }
+    // 2) 봉사시간 승인 알림 → 봉사자의 확인서 화면으로 이동
+    if (n.type === 'VISIT_APPROVED' && n.visitId) {
+      navigate(`/volunteer/certificate?visitId=${n.visitId}`)
+      return
+    }
+    // 3) 진료 메모 정리 완료 알림 → 요청자의 진료 결과 리포트(승인) 화면으로 이동
+    if (n.type === 'SUMMARY_READY') {
+      const reqId = n.requestId ?? (n.visitId ? (await action.run(() => visitApi.get(n.visitId as number)))?.requestId : null)
+      if (reqId) navigate(`/guardian/report?requestId=${reqId}`)
+      return
+    }
+    // 4) 동행 확정 알림 → 내가 올린 요청이면 확정 상세(/guardian/confirmed), 봉사자면 수락 완료(/volunteer/accepted)
+    if (n.type === 'MATCH_CONFIRMED' && n.requestId) {
+      const detail = await action.run(() => requestApi.detail(n.requestId as number))
+      if (detail && session && detail.requesterId === session.userId) {
+        navigate(`/guardian/confirmed?requestId=${n.requestId}`)
+      } else {
+        navigate(`/volunteer/accepted?requestId=${n.requestId}`)
+      }
+      return
+    }
+    // 5) 그 외 visitId 가 없는 알림(수락/마감/취소 등) → 요청 상세로 이동
+    if (!n.visitId) {
+      if (n.requestId) navigate(`/volunteer/request-detail?requestId=${n.requestId}`)
+      return
+    }
+    // 6) 동행 단계 알림(출발·도착·진료종료·귀가·대기) → 동행 현황 화면으로 이동
+    const reqId = n.requestId ?? (await action.run(() => visitApi.get(n.visitId as number)))?.requestId
+    if (reqId) navigate(`/guardian/live?requestId=${reqId}`)
   }
 
   const markAll = async () => {
@@ -192,19 +224,16 @@ function PushBanner() {
 export function NotificationSettingsScreen() {
   const settings = useApi(() => notificationApi.getSettings(), [])
   const save = useAction()
-  const [values, setValues] = useState<NotificationSettings>(DEFAULT_SETTINGS)
-
-  useEffect(() => {
-    if (settings.data) setValues(settings.data)
-  }, [settings.data])
+  const [overrides, setOverrides] = useState<Partial<NotificationSettings>>({})
+  const values: NotificationSettings = { ...(settings.data ?? DEFAULT_SETTINGS), ...overrides }
 
   // 스위치를 누르면 바로 저장하고, 실패하면 이전 값으로 되돌려요
   const change = async (key: keyof NotificationSettings, next: boolean) => {
-    const before = values
+    const before = overrides
     const after = { ...values, [key]: next }
-    setValues(after)
+    setOverrides((prev) => ({ ...prev, [key]: next }))
     const ok = await save.run(() => notificationApi.saveSettings(after))
-    if (ok === undefined) setValues(before)
+    if (ok === undefined) setOverrides(before)
   }
 
   return (
