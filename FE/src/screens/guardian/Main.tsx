@@ -817,7 +817,6 @@ export function GuardianMy() {
                 {s.age}세 · {s.region}
               </span>
             </div>
-            <Icon name="chev" size={20} color="var(--icon-muted)" />
           </div>
         ))}
       </div>
