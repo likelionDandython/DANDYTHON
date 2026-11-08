@@ -90,6 +90,17 @@ export function buildConsents(defs: AgreementDef[], checked: boolean[]) {
 const ROLE_FOR_MODE: Record<Mode, Role> = { REQUEST: 'GUARDIAN', VOLUNTEER: 'VOLUNTEER' }
 
 /** 가입 → 로그인. 실패해도 이어서 다시 시도할 수 있게 진행 상태를 저장해요 */
+// BE에 모드 전환 약관 추가 저장 API가 아직 없어서, 가입 때 양쪽 모드 약관을 모두 함께 저장해 둬요
+const ALL_MODE_CONSENTS: { item: ConsentItem; agreed: boolean }[] = [
+  { item: 'SUMMARY_RECEIVE', agreed: true },
+  { item: 'HEALTH_INFO', agreed: true },
+  { item: 'PROXY_CONFIRM', agreed: true },
+  { item: 'SUMMARY_SHARE', agreed: true },
+  { item: 'PROFILE_PUBLIC', agreed: true },
+  { item: 'VOLUNTEER_PLEDGE', agreed: true },
+  { item: 'CONFIDENTIALITY', agreed: true },
+]
+
 export async function completeSignup(
   mode: Mode,
   modeConsents: { item: ConsentItem; agreed: boolean }[],
@@ -103,7 +114,7 @@ export async function completeSignup(
       password: d.password,
       name: d.name,
       phone: d.phone,
-      consents: [...d.consents, ...modeConsents],
+      consents: [...ALL_MODE_CONSENTS, ...d.consents, ...modeConsents],
     })
     patchDraft({ signedUp: true })
   }

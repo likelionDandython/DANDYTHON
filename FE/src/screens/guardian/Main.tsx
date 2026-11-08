@@ -648,7 +648,15 @@ export function GuardianReport() {
   const approve = useAction()
   const [thanks, setThanks] = useState('')
   const [approved, setApproved] = useState(false)
-  const s = summary.data
+  const localFallback = (() => {
+    try {
+      const raw = visitId ? localStorage.getItem(`hospital-companion.summary.${visitId}`) : null
+      return raw ? (JSON.parse(raw) as { status: 'DONE' | 'FALLBACK'; summary: typeof summary.data extends { summary: infer S } ? S : never; rawMemo: string | null }) : null
+    } catch {
+      return null
+    }
+  })()
+  const s = summary.data ?? localFallback
   const sum = s?.summary
 
   const facts: [IconName, string, string][] = sum
@@ -683,7 +691,7 @@ export function GuardianReport() {
     >
       <TopBar title="오늘 진료 기록" />
       {!requestId && <ErrorText>동행 기록에서 들어와 주세요.</ErrorText>}
-      <Status loading={loading || summary.loading} error={error ?? (v?.hasSummary === false ? null : summary.error)} />
+      <Status loading={loading || summary.loading} error={error ?? (v?.hasSummary === false || localFallback ? null : summary.error)} />
       {v && (
         <div className="col" style={{ gap: 8, alignItems: 'flex-start', padding: '0 4px' }}>
           {v.endedAt && <Chip>{`귀가 완료 ${hhmm(v.endedAt)}`}</Chip>}
@@ -692,7 +700,7 @@ export function GuardianReport() {
           </h1>
         </div>
       )}
-      {v && v.hasSummary === false && <p className="t-body">아직 봉사자가 진료 요약을 작성하지 않았어요.</p>}
+      {v && v.hasSummary === false && !localFallback && <p className="t-body">아직 봉사자가 진료 요약을 작성하지 않았어요.</p>}
       {sum && (
         <p className="t-caption" style={{ margin: '0 4px', fontSize: 15, lineHeight: 1.6 }}>
           동행받는 분의 '괜찮다'는 말씀 뒤에 담긴 오늘의 진료 기록이에요

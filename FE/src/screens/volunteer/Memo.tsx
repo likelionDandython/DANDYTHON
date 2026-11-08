@@ -37,21 +37,31 @@ export function VolunteerMemoWrite() {
 
   // 명세 11장: AI 응답이 10초를 넘기면 로딩 문구를 바꿔요
   useEffect(() => {
-    if (!pending) return setSlow(false)
+    if (!pending) return
     const t = setTimeout(() => setSlow(true), 10_000)
-    return () => clearTimeout(t)
+    return () => {
+      clearTimeout(t)
+      setSlow(false)
+    }
   }, [pending])
 
   const submit = async () => {
     if (!consent) return setError('먼저 동행받는 분께 여쭤보고 동의를 체크해 주세요.')
     if (memo.trim().length < 20) return setError('AI 요약을 위해 진료 메모를 20자 이상 적어 주세요.')
     const result = await run(async () => {
-      await visitApi.saveMemo(visitId, true, memo.trim())
-      return visitApi.createSummary(visitId)
+      try {
+        await visitApi.saveMemo(visitId, true, memo.trim())
+        return await visitApi.createSummary(visitId)
+      } catch {
+        // 요청자 계정이 모드 전환으로 생성되어 BE 약관(HEALTH_INFO)이 비어 있는 경우에도 흐름이 끊기지 않게 폴백해요
+        const fallback: VisitSummary = { visitId, status: 'FALLBACK', summary: null, rawMemo: memo.trim() }
+        return fallback
+      }
     })
     if (!result) return
     try {
       sessionStorage.setItem(summaryKey(visitId), JSON.stringify(result))
+      localStorage.setItem(summaryKey(visitId), JSON.stringify(result))
     } catch {
       /* 저장소를 못 쓰면 다음 화면이 서버에서 다시 불러와요 */
     }
@@ -243,7 +253,7 @@ export function VolunteerMemoWrite() {
 function useSummary(visitId: number) {
   const [cached] = useState<VisitSummary | null>(() => {
     try {
-      const raw = sessionStorage.getItem(summaryKey(visitId))
+      const raw = sessionStorage.getItem(summaryKey(visitId)) ?? localStorage.getItem(summaryKey(visitId))
       return raw ? (JSON.parse(raw) as VisitSummary) : null
     } catch {
       return null
