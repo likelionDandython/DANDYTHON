@@ -10,6 +10,7 @@ import { Icon, type IconName } from '../../components/common/Icon'
 import { Screen, Spacer, TopBar } from '../../components/common/Layout'
 import { TabBar, VOLUNTEER_TABS } from '../../components/common/TabBar'
 import { ModeSwitchButton, ModeSwitchCard } from '../../components/common/ModeSwitch'
+import { BellButton } from '../../components/common/BellButton'
 import { EmptyState, Status } from '../../components/common/States'
 import { CharacterAvatar, CharacterPair } from '../../components/common/Character'
 import { RequestCard } from '../../components/volunteer/RequestCard'
@@ -43,6 +44,7 @@ export function VolunteerHome() {
           <span className="t-h1">오늘도 함께 걸어요</span>
         </div>
         <span className="row" style={{ gap: 4 }}>
+          <BellButton />
           <ModeSwitchButton current="VOLUNTEER" />
         </span>
       </div>

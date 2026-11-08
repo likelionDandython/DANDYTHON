@@ -66,6 +66,14 @@ export const TYPE_META: Record<string, { label: string; tone: 'teal' | 'coral' }
   TREATMENT_DONE: { label: '진료 종료', tone: 'teal' },
   HOMECOMING: { label: '귀가', tone: 'coral' },
   WAITING: { label: '대기 소식', tone: 'teal' },
+  SUMMARY_READY: { label: '진료 메모 정리', tone: 'teal' },
+  VISIT_APPROVED: { label: '봉사시간 승인', tone: 'teal' },
+  APPLICATION_RECEIVED: { label: '새 동행 신청', tone: 'coral' },
+  APPLICATION_ACCEPTED: { label: '동행 신청 수락', tone: 'teal' },
+  APPLICATION_CLOSED: { label: '동행 모집 마감', tone: 'coral' },
+  MATCH_CONFIRMED: { label: '동행 확정', tone: 'teal' },
+  APPLICATION_CANCELED: { label: '동행 신청 취소', tone: 'coral' },
+  REQUEST_CANCELED: { label: '동행 요청 취소', tone: 'coral' },
 }
 
 export function typeMeta(type: string) {

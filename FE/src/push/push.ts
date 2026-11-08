@@ -49,7 +49,7 @@ function swUrl() {
 }
 
 /** 알림 권한을 받고 FCM 토큰을 서버에 등록해요. 어디서 실패해도 앱 동작에는 영향이 없어요 */
-export async function registerPush(): Promise<void> {
+export async function registerPush(userId?: number): Promise<void> {
   try {
     if (!isPushConfigured || typeof Notification === 'undefined' || !('serviceWorker' in navigator)) return
     if (!(await isSupported())) return
@@ -60,9 +60,10 @@ export async function registerPush(): Promise<void> {
     const app = getApps()[0] ?? initializeApp(config)
     const token = await getToken(getMessaging(app), { vapidKey: VAPID_KEY, serviceWorkerRegistration: registration })
     if (!token) return
-    if (localStorage.getItem(TOKEN_KEY) === token) return
+    const cacheVal = `${userId ?? ''}:${token}`
+    if (localStorage.getItem(TOKEN_KEY) === cacheVal) return
     await http.put(`/users/me/push-registrations/${deviceId()}`, { registrationType: 'TOKEN', registrationValue: token })
-    localStorage.setItem(TOKEN_KEY, token)
+    localStorage.setItem(TOKEN_KEY, cacheVal)
   } catch {
     /* 푸시는 보조 기능이라 조용히 넘어가요 */
   }
@@ -71,7 +72,7 @@ export async function registerPush(): Promise<void> {
 /** 로그아웃 때: 서버에서 이 기기 토큰을 지워요 (토큰이 아직 살아 있을 때 불러야 해요) */
 export async function unregisterPush(): Promise<void> {
   try {
-    if (!localStorage.getItem(TOKEN_KEY)) return
+    
     localStorage.removeItem(TOKEN_KEY)
     await http.delete(`/users/me/push-registrations/${deviceId()}`)
   } catch {

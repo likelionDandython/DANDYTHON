@@ -63,10 +63,10 @@ function load(): Session | null {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(load)
 
-  // 로그인(또는 새로고침으로 복구)되면 알림 권한을 받고 푸시 토큰을 등록해요
+  // 로그인(또는 새로고침으로 복구, 계정 전환)되면 알림 권한을 받고 푸시 토큰을 등록해요
   const loggedInUserId = session?.userId
   useEffect(() => {
-    if (loggedInUserId) void registerPush()
+    if (loggedInUserId) void registerPush(loggedInUserId)
   }, [loggedInUserId])
 
   const update = useCallback((fn: (prev: Session) => Session) => {
@@ -86,8 +86,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return s
   }, [])
   const logout = useCallback(() => {
-    void unregisterPush() // 토큰이 지워지기 전에 이 기기의 푸시 토큰을 서버에서 삭제
-    persist(null)
+    // JWT를 삭제하기 전에 해제 요청이 먼저 출발하도록 호출한 뒤 로컬 세션을 비워요
+    void unregisterPush().finally(() => {
+      persist(null)
+    })
     setSession(null)
   }, [])
   const setProfileCompleted = useCallback((v: boolean) => update((p) => ({ ...p, profileCompleted: v })), [update])

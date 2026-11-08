@@ -25,6 +25,14 @@ const TYPE_ICON: Record<string, IconName> = {
   TREATMENT_DONE: 'hospital',
   HOMECOMING: 'home',
   WAITING: 'clock',
+  SUMMARY_READY: 'doc',
+  VISIT_APPROVED: 'check',
+  APPLICATION_RECEIVED: 'users',
+  APPLICATION_ACCEPTED: 'check',
+  APPLICATION_CLOSED: 'info',
+  MATCH_CONFIRMED: 'heart',
+  APPLICATION_CANCELED: 'xcircle',
+  REQUEST_CANCELED: 'xcircle',
 }
 
 const GROUPS = ['오늘', '어제', '이전'] as const
@@ -47,7 +55,7 @@ export function NotificationList() {
       setReadIds((ids) => [...ids, n.notificationId])
       notificationApi.read(n.notificationId).catch(() => undefined)
     }
-    if (!n.visitId) return
+    if (!n.visitId) { if (n.requestId) navigate(`/volunteer/request-detail?requestId=${n.requestId}`); return }
     // 알림에는 visitId 만 있어서, 동행 현황 화면에 필요한 requestId 를 찾아서 이동해요
     const visit = await action.run(() => visitApi.get(n.visitId as number))
     if (visit) navigate(`/guardian/live?requestId=${visit.requestId}`)
