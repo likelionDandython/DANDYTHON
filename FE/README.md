@@ -1,159 +1,119 @@
-# 경북대구병원동행 · 모바일 화면 (React + Vite + TypeScript)
+# 같이가요 (Gachigayo) — Frontend (`React + TypeScript + Vite`)
 
-경북 어르신의 대구 병원 동행 서비스 화면을 코드로 옮긴 프로토타입이에요.
-Figma 파일 「병원동행 봉사자 앱」의 세 페이지(봉사자 · 어르신 · 보호자)에 있는 화면 37개를 그대로 옮겼어요.
+경북 어르신의 대구 대형병원 진료 길에 대구 지역 대학생 봉사자가 함께하는 **같이가요**의 모바일 웹 프론트엔드입니다.  
+단일 계정으로 **동행 요청 모드(나·가족)**와 **동행하기 모드(봉사자)**를 오갈 수 있으며, 31개 전체 화면이 백엔드 REST API 및 FCM 웹 푸시와 연동되어 있습니다.
 
-- Figma: https://www.figma.com/design/PgOCB74w9FtE59SJPWg1CP
+---
 
-## 실행
+## 🌐 배포 및 디자인 시안
+
+* **Live Demo (Cloudflare Pages)**: https://dandython.pages.dev
+* **Backend API (Railway)**: https://dandython-production.up.railway.app
+* **Figma Design**: https://www.figma.com/design/PgOCB74w9FtE59SJPWg1CP
+
+---
+
+## 🚀 실행 및 빌드 방법
+
+### 1. 환경변수 설정 (`.env`)
+
+```bash
+cp .env.example .env
+```
+
+| 환경변수 | 설명 | 기본값 |
+| :--- | :--- | :--- |
+| `VITE_PROXY_TARGET` | 로컬 개발 서버(`vite dev`)가 `/api/*` 요청을 프록시할 백엔드 주소 | `http://localhost:8080` |
+| `VITE_API_URL` | 배포 환경에서 직접 호출할 API Base URL | `/api` |
+| `VITE_FIREBASE_*` | FCM 웹 푸시 연동용 Firebase Web Config 및 `VITE_FIREBASE_VAPID_KEY` | 미설정 시 앱 내 알림 목록으로 동작 |
+
+### 2. 개발 서버 및 프로덕션 빌드
 
 ```bash
 npm install
-npm run dev
+npm run dev      # http://localhost:5173 실행 ('/' 접속 시 시작 화면(/start), '/dev' 접속 시 31개 전체 화면 갤러리 제공)
+npm run lint     # oxlint 정적 분석 (0 warnings, 0 errors)
+npm run build    # tsc -b 타입 체크 + dist/ 프로덕션 빌드
+npm run preview  # 빌드 결과물 로컬 프리뷰
 ```
 
-`http://localhost:5173` 에 접속하면 전체 화면 목록이 나와요. 화면을 누르면 390×844 모바일 프레임으로 열리고, 버튼을 누르면 다음 화면으로 이어져요.
-휴대폰 폭(430px 이하)에서는 프레임 없이 화면 전체를 채워요.
+* 데스크톱 브라우저에서는 **390×844 모바일 프레임**으로 표시되며, 모바일 기기 폭(`430px` 이하)에서는 프레임 없이 전체 화면(`100dvh`)으로 동작합니다.
+* Cloudflare Pages SPA 라우팅을 위해 `public/_redirects`(`/* /index.html 200`)가 설정되어 있습니다.
 
-```bash
-npm run build    # 타입 검사 + 배포용 빌드 (dist/)
-npm run preview  # 빌드 결과 미리보기
-```
+---
 
-## 폴더 구조
+## 🧭 화면 구성 및 라우트 (`src/routes.tsx`)
 
-```
+### 1. 공통 · 계정 하나 (`/start`, `/signup`, `/login`, `/mode`)
+| 코드 | 화면명 | 경로 | 주요 기능 및 심사 기준 반영 사항 |
+| :--- | :--- | :--- | :--- |
+| `C01` | 시작 | `/start` | 서비스 슬로건 및 단일 계정 안내, 로그인 세션 보유 시 마지막 사용 모드로 자동 이동 |
+| `C02` | 가입 1 · 기본 정보 | `/signup` | 역할 구분 없이 이름·휴대폰·이메일·비밀번호(8~20자) 입력 (`sessionStorage` 임시 저장) |
+| `C03` | 가입 2 · 공통 약관 | `/signup/agree` | 필수 공통 약관(`TERMS`, `PRIVACY`, `THIRD_PARTY`) 동의 |
+| `C04` | 로그인 | `/login` | 이메일+비밀번호 로그인, 401 응답 시 자동 세션 정리 및 로그인 이동 |
+| `C10` | 모드 선택 | `/mode` | **"오늘은 무엇을 할까요?"** — `동행 요청하기` / `동행하러 가기` 선택 |
+| `C11` | 모드 첫 진입 약관 | `/mode/terms` | 모드별 최초 1회 필수 약관 수집 (봉사자 금전 대리 결제 금지 서약, 요청자 건강정보·대리 등록 확인 등) |
+
+### 2. 동행 요청 모드 (`/guardian/*`, `/request/*`)
+| 코드 | 화면명 | 경로 | 주요 기능 및 심사 기준 반영 사항 |
+| :--- | :--- | :--- | :--- |
+| `G00` | 요청 대상 선택 | `/request/who` | **나(`SELF`)** 또는 **가족(`FAMILY`)** 선택 |
+| `G10` | 동행받는 분 등록 | `/guardian/senior/new` | 이름, 출생연도(연령 계산), 연락처, 거주지 주소(`○○시/군` 자동 추출) 등록 |
+| `G01` | 요청자 홈 | `/guardian/home` | 상단 동행 대상(`나` / 등록된 가족) 스위처 드롭다운, 진행 중 동행 실시간 단계 바, 다가오는 일정, 알림 벨(`BellButton`), 모드 전환 버튼 |
+| `G02` | 동행 신청 | `/guardian/apply` | 대구 5대 대학병원 선택, **대구 주요 역·터미널 4곳(`동대구역`, `동대구터미널`, `북부정류장`, `서부정류장`) 퀵 버튼**, 대구 이동 수단, 필요한 도움 5종, 중증 거동 불편 시 장기요양 제도 안내 |
+| `G08` | 신청자 보기 | `/guardian/applicants` | 대기 중 신청자 카드(신청 한 마디 말풍선, **재학 인증 배지**, **고향 연결 배지**, 동행 횟수) |
+| `G08-1` | 봉사자 프로필 상세 | `/guardian/volunteer` | 학력·고향·활동 지역·가능 요일·할 수 있는 도움·누적 봉사시간·이전 요청자 감사 후기 열람 |
+| `G09` | 봉사자 확정 확인 | `/guardian/applicants/confirm` | 1:1 매칭 확정 전 안내 (상호 연락처 공개, 나머지 신청 자동 마감, 2일 전 이후 취소 시 기록 안내) |
+| `G03` | 봉사자 확정 완료 | `/guardian/confirmed` | 확정된 봉사자 프로필 요약 및 즉시 전화 걸기(`tel:`), 요청 취소 이동 |
+| `G04` | 동행 현황 (실시간) | `/guardian/live` | 체크인부터 배웅까지 단계별 완료 시각(`completedAt`) 타임라인 조회 및 봉사자 전화 연결 |
+| `G05` | 진료 결과 리포트 | `/guardian/report` | 감성 헤드라인(*"동행받는 분의 '괜찮다'는 말씀 뒤에 담긴 오늘의 진료 기록이에요"*), AI 3줄 요약·다음 진료·처방약·챙길 일 카드, 요약 실패 시 원문 메모 표시, **감사 메시지 프리셋 3종(`ThanksPresets`) + 봉사시간 승인** |
+| `G06` | 동행 기록 | `/guardian/records` | 동행받는 분 이름별 필터링 및 완료·승인·취소 이력 조회 |
+| `G07` | MY · 모드 전환 | `/guardian/my` | 모드 전환 카드, 등록된 동행받는 분 관리, 알림 설정 이동, 로그아웃 |
+| `G11` | 요청 취소 확인 | `/guardian/cancel` | 동행 2일 전 이내 취소(`lateCancel`) 경고 안내 및 요청 취소(`DELETE /requests/{id}`) |
+| `G12~13` | 알림 목록 · 설정 | `/guardian/notifications(/settings)` | 오늘/어제/이전 그룹별 알림 목록, 읽음 처리, 5대 동행 단계별 알림 수신 스위치 |
+
+### 3. 동행하기 모드 (`/volunteer/*`)
+| 코드 | 화면명 | 경로 | 주요 기능 및 심사 기준 반영 사항 |
+| :--- | :--- | :--- | :--- |
+| `V10~11` | 봉사자 프로필 등록·완성 | `/volunteer/profile(/done)` | 만 18세 이상 검증, 대학·학과·학년·고향·한 줄 소개, 활동 지역(대구 구·군 및 경산·영천·칠곡·군위)·가능 요일·이동 방법·가능 도움(`SIGN_LANGUAGE` 포함) 저장 |
+| `03` | 봉사자 홈 | `/volunteer/home` | 프로필 미완성 안내 배너, 오늘/다가오는 동행 카드(`동행 시작하기` 바로가기), 신규 동행 요청 미리보기 |
+| `04` | 동행 요청 게시판 | `/volunteer/requests` | `전체` / `이번 주` / `휠체어 가능` 필터 칩, 동행 2일 전 미확정 **`급해요` 배지**, 예상 소요 시간 및 2인 권장 표시 |
+| `05` | 요청 상세 및 신청 | `/volunteer/request-detail` | 일시·병원·만날 장소·필요 도움 확인, 확정 전 상세 주소/연락처 비공개 보호 안내, 본인 등록 요청 신청 차단(`mine`), 신청 한 마디 작성 |
+| `06` | 수락 완료 | `/volunteer/accepted` | 매칭 확정 안내 및 공개된 요청자 연락처 확인 |
+| `07` | 동행 진행 체크리스트 | `/volunteer/progress` | 동행 당일 검증(`notToday`), 원버튼 단계 진행(`만남 체크인` → 단계별 완료 → `배웅 체크아웃`), 금전 대리 결제 금지 안내, 요청자 바로 전화 |
+| `09` | 진료 메모 + 현장 동의 | `/volunteer/memo` | **동행받는 분 확인용 큰 글씨 동의 모달(`25px` 제목, `20px` 안내, `62px` 동의 버튼)** — 직접 동의 터치 전 메모란 비활성화, 20자 이상 검증, 10초 초과 지연 안내 문구 전환 |
+| `10~11` | 진료 요약 완료 · Fallback | `/volunteer/memo/done`, `/fallback` | 생성된 AI 요약 확인 또는 요약 실패 시 메모 원문 전달 완료 안내 |
+| `08` | 봉사자 MY | `/volunteer/my` | 누적 동행 횟수·총 봉사시간·받은 감사 메시지 집계, 활동 내역 및 신청 취소, 프로필 수정·확인서 발급 이동 |
+| `12` | 신청 취소 | `/volunteer/cancel` | 동행 2일 이내 취소 시 페널티 안내 및 신청 취소(`DELETE /applications/{id}`) |
+| `13` | 봉사 확인서 | `/volunteer/certificate` | 승인 완료된 동행의 활동일·병원·실제 활동 시간·인정 시간 증명서 조회 및 `window.print()` 기반 PDF 저장 |
+
+---
+
+## 📂 소스 코드 구조 (`src/`)
+
+```text
 src/
-├─ styles/tokens.css        # Figma 'Color' 변수와 1:1인 디자인 토큰
-├─ index.css                # 공통 스타일 (컴포넌트 클래스)
+├─ api/
+│  ├─ client.ts               # fetch 래퍼 (JWT 자동 주입, {success,data,error} 언랩, 401 이벤트 발행)
+│  ├─ types.ts                # 도메인 Enum 및 API Request/Response 타입 정의
+│  ├─ services.ts             # authApi, userApi, profileApi, requestApi, applicationApi, visitApi
+│  └─ labels.ts               # 상태·도움 항목 한글 라벨 및 서버 에러 코드 → 친화적 한글 문구 매핑
+├─ auth/
+│  ├─ AuthContext.tsx         # 단일 계정 + 양방향 모드 세션 관리, 새로고침 시 /users/me 동기화, FCM 자동 등록
+│  └─ signup.ts               # 가입 단계별 임시 저장 및 공통/모드별 약관 동의 빌더
 ├─ components/
-│  ├─ common/               # 세 앱이 같이 쓰는 컴포넌트
-│  │  ├─ Button.tsx         # Button(Primary/Secondary/Ghost), BigButton(어르신용)
-│  │  ├─ Chip.tsx           # 상태 Chip, 선택형 칩, 필터 칩
-│  │  ├─ Form.tsx           # Field, Checkbox, 약관 동의, Switch, OptionCards
-│  │  ├─ Icon.tsx           # 라인 아이콘 세트
-│  │  ├─ Layout.tsx         # Screen 프레임, StatusBar, TopBar, Progress
-│  │  └─ TabBar.tsx         # 봉사자 / 보호자 탭바
-│  ├─ volunteer/RequestCard.tsx
-│  └─ elder/Elder.tsx       # ChoiceRow, ChoiceRow/기타(직접 입력), 큰 입력칸
-├─ screens/
-│  ├─ volunteer/  Auth.tsx (온보딩·로그인·등록)  Main.tsx (홈~마이페이지)
-│  ├─ elder/      Elder.tsx (시작·가입·신청·당일 안내·기록)
-│  └─ guardian/   Auth.tsx (시작·로그인·가입)  Main.tsx (홈~MY)
-├─ data/mock.ts             # 예시 데이터 (API 연결 시 교체)
-├─ routes.tsx               # 화면 번호 ↔ 경로 목록
-└─ App.tsx                  # 라우터 + 화면 목록 페이지
+│  ├─ common/                 # Button, BigButton, Chip, Form, Icon, Layout, TabBar, ModeSwitch,
+│  │                          # Character(일러스트/아바타), HometownBadge(고향 연결), ThanksPresets(감사 프리셋), States
+│  └─ volunteer/RequestCard.tsx
+├─ design/
+│  ├─ notificationsApi.ts     # 알림 목록·읽음·5대 설정 API 및 날짜 그룹 유틸
+│  ├─ routes.tsx              # 신청자 수락 및 알림 라우트 모듈
+│  └─ styles.ts               # 디자인 개편 스타일 로더
+├─ hooks/useApi.ts            # 선언적 데이터 패칭(useApi) 및 비동기 액션 상태 관리(useAction)
+├─ lib/
+│  ├─ format.ts               # 날짜·시간·D-day·분→시간 변환·주소→시군 추출 유틸
+│  └─ hometown.ts             # 경북 22개 시·군 인접 생활권 매칭 로직 (isHometownNeighbor)
+├─ push/push.ts               # Firebase Cloud Messaging 서비스 워커 등록 및 기기별 토큰 관리
+├─ screens/                   # common / guardian / volunteer 화면 컴포넌트
+└─ styles/                    # tokens.css, design-tokens.css, design-match.css, screens.css, notifications.css
 ```
-
-## Figma ↔ 코드 대응
-
-| Figma | 코드 |
-| --- | --- |
-| 변수 `brand/primary`, `bg/canvas` … | `--brand-primary`, `--bg-canvas` … (`tokens.css`) |
-| Button (Type=Primary/Secondary/Ghost) | `<Button variant="primary" />` |
-| BigButton (Type=Primary/Call/Ghost) | `<BigButton variant="call" />` |
-| Chip (Tone=Green/Orange/Gray) | `<Chip tone="orange" />` |
-| ChoiceRow / ChoiceRow/기타 | `<ChoiceRow />`, `<ChoiceRowOther />` |
-| TabBar, TabBar/보호자 | `<TabBar tabs={VOLUNTEER_TABS} />`, `GUARDIAN_TABS` |
-| RequestCard | `<RequestCard request={...} />` |
-
-## 화면 경로
-
-| 앱 | 번호 | 경로 |
-| --- | --- | --- |
-| 봉사자 | 01 온보딩 · 02 로그인 · 10~13 등록 | `/volunteer/onboarding`, `/volunteer/login`, `/volunteer/signup/1~3`, `/volunteer/signup/done` |
-| 봉사자 | 03 홈 · 04 요청 목록 · 05 상세 · 06 수락 · 07 진행 · 08 MY | `/volunteer/home`, `/requests`, `/request-detail`, `/accepted`, `/progress`, `/my` |
-| 어르신 | E01 시작 · E10~E13 가입 | `/elder/start`, `/elder/signup/1~3`, `/elder/signup/done` |
-| 어르신 | E02 홈 · E03~E05 신청 · E06 배정 · E07 도착 안내 · E08 기록 | `/elder/home`, `/elder/apply/1~3`, `/assigned`, `/arriving`, `/records` |
-| 보호자 | G00 시작 · G01-0 로그인 · G10~G13 가입 | `/guardian/onboarding`, `/guardian/login`, `/guardian/signup/1~3`, `/guardian/signup/done` |
-| 보호자 | G01 홈 · G02 신청 · G03 확정 · G04 실시간 · G05 리포트 · G06 기록 · G07 MY | `/guardian/home`, `/apply`, `/confirmed`, `/live`, `/report`, `/records`, `/my` |
-
-## 다음에 할 일
-
-- 지도: `MapPlaceholder`(screens/volunteer/Main.tsx)를 카카오맵 등 실제 지도 SDK로 교체
-- 데이터: `data/mock.ts`와 화면 안 예시 문구를 API 응답으로 교체
-- 인증: 로그인·인증번호 버튼에 실제 SMS 인증 연결
-- 배포 시 SPA 라우팅: 새로고침해도 화면이 열리도록 호스팅에서 모든 경로를 `index.html`로 보내기 (Vercel·Netlify는 기본 설정으로 동작)
-
-
----
-
-## API 연동 (BE 명세 `api-spec.md` v0.1 반영)
-
-> 위 설명 중 `data/mock.ts`(목업 데이터)와 "로그인 인증번호/SMS" 관련 내용은 이번 작업으로 **더 이상 사용하지 않습니다.** (`mock.ts` 삭제, 로그인은 이메일+비밀번호)
-
-### 실행 방법
-
-```bash
-cp .env.example .env     # 백엔드 주소 설정 (기본 http://localhost:8080)
-npm install
-npm run dev
-```
-
-- 개발 서버가 `/api/*` 요청을 `VITE_PROXY_TARGET`으로 프록시합니다 (CORS 회피).
-- 배포 시 API 주소를 직접 지정하려면 `VITE_API_URL`을 설정합니다 (기본값 `/api`).
-
-### 추가된 구조
-
-```
-src/
-├ api/
-│  ├ types.ts      # 명세의 Enum·요청·응답 타입
-│  ├ client.ts     # fetch 래퍼: JWT 헤더, {success,data,error} 언랩, ApiError
-│  ├ services.ts   # authApi / profileApi / requestApi / applicationApi / visitApi
-│  └ labels.ts     # 상태·필요도움 한글 라벨, 에러코드 → 한글 문구
-├ auth/
-│  ├ AuthContext.tsx  # 로그인 세션(localStorage), 401 자동 로그아웃
-│  └ signup.ts        # 여러 화면에 걸친 가입 입력 임시 저장 + 가입→로그인→어르신 등록
-├ hooks/useApi.ts  # useApi(조회: loading/error/data), useAction(버튼 동작)
-└ lib/format.ts    # 날짜·시간·D-day·나이 등 포맷
-```
-
-- `/volunteer/*`, `/guardian/*` 중 온보딩·로그인·가입을 제외한 화면은 **로그인 + 역할 일치**가 필요합니다 (`App.tsx`의 `Guard`).
-- 화면 간 이동은 쿼리스트링으로 id를 전달합니다 (예: `/volunteer/request-detail?requestId=10`, `/guardian/report?requestId=10`).
-
-### 이번에 수정한 화면
-
-| 화면 | 변경 내용 |
-|---|---|
-| 봉사자·보호자 로그인 | 휴대폰+인증번호 → **이메일+비밀번호**, 카카오 로그인 버튼 제거, 역할 불일치 안내 |
-| 봉사자 가입 1~3 | 이메일·비밀번호 입력 추가, 만 18세 검증, 약관 → `consents` 코드로 전송, 가입 후 자동 로그인 |
-| 보호자 가입 1~3 | 이메일·비밀번호 추가, 약관 목록 확장(제3자 제공·건강정보·요약 공유/수신), 어르신 등록(`POST /seniors`) |
-| 봉사자 홈 / 요청 목록 | 게시판 API, 필터(전체·이번 주·휠체어 가능), 급한 요청·신청 여부 표시, "다가오는 동행" 카드 |
-| 요청 상세 | 상세 API, 연락처 공개 전/후 처리, 신청 메시지 입력, 신청 에러 문구 |
-| 수락 완료 | 요청 상세 데이터로 표시 |
-| 동행 진행 | 서버 체크리스트, 체크인 → 단계 완료 → 체크아웃 한 버튼으로 진행 |
-| 봉사자 MY | 누적 동행·봉사시간·감사 메시지, 활동 내역, 로그아웃(톱니 아이콘) |
-| 보호자 홈 | 내 요청 목록, 진행 중 동행 진행률, 다가오는 일정 |
-| 동행 신청 | 어르신·병원 선택, 날짜·시간·주소·필요 도움·인원·성별 선호 입력 후 `POST /requests` |
-| 봉사자 확정 / 실시간 현황 | 확정 봉사자 정보, 동행 단계, 전화 연결 |
-| 진료 결과 리포트 | AI 요약 표시, 요약 실패 시 원문 메모, **봉사시간 승인** + 감사 메시지 |
-| 동행 기록 / 보호자 MY | 완료·취소 기록, 등록한 어르신 목록, 로그아웃 |
-
-공통 컴포넌트: `ToggleChipGroup`·`FilterChips`·`Agreements`에 `onChange` 추가, `SelectField`·`ErrorText` 신규.
-
----
-
-## 디자인이 필요한 부분 (화면/UI가 없어 연동하지 못한 기능)
-
-명세에는 있으나 Figma에 화면이 없어 **API 함수만 만들어 두었습니다** (`src/api/services.ts`).
-
-| 우선순위 | 필요한 화면 | 관련 API | 비고 |
-|---|---|---|---|
-| 높음 | **신청자 목록 + 수락** (보호자) | `GET /requests/{id}/applications`, `POST /applications/{id}/accept` | 없으면 동행이 확정되지 않음. 신청자 프로필·신청 메시지 카드, 수락 버튼 |
-| 높음 | **봉사자 프로필 입력** (가입 후 S-03) | `PUT /volunteers/me` | 성별·학교·학과·학년·고향·소개·사진. 없으면 `PROFILE_INCOMPLETE`로 신청 불가 |
-| 높음 | **진료 메모 작성 + 어르신 동의** (봉사자) | `POST /visits/{id}/memo`, `POST /visits/{id}/summary` | 동행 종료 후 흐름: 동의 체크 → 메모 입력 → AI 요약 생성 |
-| 중간 | **봉사 확인서** (봉사자) | `GET /visits/{id}/certificate` | 화면 캡처로 PDF 처리 |
-| 중간 | **요청 취소 / 신청 취소** UI + 늦은 취소 경고 | `DELETE /requests/{id}`, `DELETE /applications/{id}` | `lateCancel`(동행 2일 이내) 안내 문구 |
-| 중간 | **어르신 추가 등록** (보호자 MY "추가" 버튼, 가입 2단계 "한 분 더") | `POST /seniors` | |
-| 중간 | **봉사자 프로필 상세** (보호자가 신청자 확인) | `GET /volunteers/{userId}` | 신뢰 지표(`visitCount`, `totalMinutes`, 감사 메시지) |
-| 낮음 | 빈 상태·로딩·오류 화면 디자인 | - | 현재는 텍스트로 임시 표시 |
-| 낮음 | 봉사자 가입 안내 | - | 승인 대기 상태별 화면 (BE 답변 후) |
-
-디자인 조정이 필요한 기존 화면:
-- **로그인 / 가입**: 이메일·비밀번호 입력이 들어가도록 재디자인 (현재 기존 `Field` 스타일로 임시 구성)
-- **동행 신청**: 진료과·봉사자 수·성별 선호·만나는 곳 종류 입력 추가 (임시로 `SelectField` 사용)
-- **보호자 가입 약관**: 항목이 8개로 늘어남. 필수/선택 구분과 접기 UI 필요
-- BE 답변에 따라 제거/변경될 화면: 어르신 앱, 지도(실시간 위치), 알림 설정, 봉사자 가입 2·3단계
-
-BE 확인이 필요한 항목은 [`../docs/BE-요청사항.md`](../docs/BE-요청사항.md)에 정리했습니다.
