@@ -245,6 +245,9 @@ export function VolunteerMemoWrite() {
       <Button onClick={submit} disabled={pending || !visitId}>
         {pending ? (slow ? '요약에 시간이 걸리고 있어요…' : 'AI가 정리하는 중…') : '메모 저장하고 요약 만들기'}
       </Button>
+      <Button variant="ghost" to="/volunteer/home">
+        메모 없이 마무리하기 (홈으로)
+      </Button>
     </Screen>
   )
 }

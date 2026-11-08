@@ -65,8 +65,8 @@ export const COMMON_AGREEMENTS: AgreementDef[] = [
 export const REQUEST_AGREEMENTS: AgreementDef[] = [
   { label: '[필수] 진료 요약 수신', code: 'SUMMARY_RECEIVE' },
   { label: '[필수] 건강정보 수집·이용', code: 'HEALTH_INFO' },
-  { label: '[가족 요청 시] 가족 정보 대리 등록 확인', code: 'PROXY_CONFIRM' },
-  { label: '[선택] 진료 요약 공유', code: 'SUMMARY_SHARE' },
+  { label: '[필수] 가족 정보 대리 등록 확인 (가족 요청 시)', code: 'PROXY_CONFIRM' },
+  { label: '[필수] 진료 요약 공유', code: 'SUMMARY_SHARE' },
 ]
 
 /** 동행하기 모드에 처음 들어갈 때 */
@@ -114,7 +114,7 @@ export async function completeSignup(
       password: d.password,
       name: d.name,
       phone: d.phone,
-      consents: [...ALL_MODE_CONSENTS, ...d.consents, ...modeConsents],
+      consents: [...d.consents, ...modeConsents, ...ALL_MODE_CONSENTS],
     })
     patchDraft({ signedUp: true })
   }
