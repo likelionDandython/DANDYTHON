@@ -10,3 +10,6 @@ out/
 # 비밀값 - 절대 커밋 금지
 .env
 src/main/resources/application-secret.yml
+*-firebase-adminsdk-*.json
+service-account*.json
+serviceAccountKey.json

@@ -18,6 +18,10 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.Objects;
+import org.springframework.context.ApplicationEventPublisher;
+import com.dandi.hospital.notification.dto.NotificationCommand;
+import com.dandi.hospital.notification.entity.NotificationType;
+import com.dandi.hospital.notification.event.NotificationEvents;
 
 @Service
 @RequiredArgsConstructor
@@ -28,6 +32,7 @@ public class VisitSummaryTxService {
     private final ConsentService consentService;
     private final SummaryPrivacyService privacyService;
     private final Clock visitClock;
+    private final ApplicationEventPublisher events;
 
     @Transactional(readOnly = true)
     public SummaryContext loadContext(Long visitId, Long actorId) {
@@ -55,6 +60,8 @@ public class VisitSummaryTxService {
         if (reusable(visit))
             return SummaryResponse.from(visit);
         visit.saveSummary(context.memoRevision(), content, LocalDateTime.now(visitClock).withNano(0));
+        NotificationEvents.publish(events, new NotificationCommand("visit:" + visit.getId() + ":summary:" + visit.getMemoRevision(),
+                NotificationType.SUMMARY_READY, request.getGuardianId(), request.getId(), visit.getId()));
         return SummaryResponse.from(visit);
     }
 

@@ -15,6 +15,12 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.*;
+import org.springframework.context.ApplicationEventPublisher;
+import com.dandi.hospital.notification.dto.NotificationCommand;
+import com.dandi.hospital.notification.entity.NotificationType;
+import com.dandi.hospital.notification.event.NotificationEvents;
+import com.dandi.hospital.visit.repository.VisitRepository;
 
 @Service
 @RequiredArgsConstructor
@@ -22,6 +28,8 @@ public class RequestCancelService {
 
     private final RequestRepository requestRepository;
     private final ApplicationRepository applicationRepository;
+    private final VisitRepository visitRepository;
+    private final ApplicationEventPublisher events;
 
     /**
      * 요청 취소 (요청을 등록한 사람만)
@@ -43,9 +51,21 @@ public class RequestCancelService {
             throw new CustomException(ErrorCode.INVALID_STATUS);
         }
 
+        var affected = new ArrayList<>(applicationRepository.findAllByRequestIdAndStatus(requestId, ApplicationStatus.PENDING));
+        affected.addAll(applicationRepository.findAllByRequestIdAndStatus(requestId, ApplicationStatus.ACCEPTED));
         request.changeStatus(current, RequestStatus.CANCELED);
         applicationRepository.findAllByRequestIdAndStatus(requestId, ApplicationStatus.PENDING)
                 .forEach(a -> a.changeStatus(ApplicationStatus.PENDING, ApplicationStatus.CLOSED));
+
+        var visits = visitRepository.findAllByRequestIdOrderByIdAsc(requestId);
+        Set<Long> recipients = new HashSet<>();
+        for (var application : affected) {
+            if (!recipients.add(application.getVolunteerId())) continue;
+            Long visitId = visits.stream().filter(visit -> visit.getVolunteerId().equals(application.getVolunteerId()))
+                    .map(visit -> visit.getId()).findFirst().orElse(null);
+            NotificationEvents.publish(events, new NotificationCommand("request:" + requestId + ":canceled",
+                    NotificationType.REQUEST_CANCELED, application.getVolunteerId(), requestId, visitId, application.getId()));
+        }
 
         return new CancelRequestResult(requestId, request.getStatus(), isLate(request.getDate()));
     }
