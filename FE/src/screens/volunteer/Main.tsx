@@ -21,11 +21,16 @@ import { dDay, formatDate, formatDateTime, formatTime, hhmm, minutesToText, toda
 const tabs = <TabBar tabs={VOLUNTEER_TABS} />
 
 
-/** 지금 진행/확정된 내 동행 (가장 가까운 날짜) */
+/** 지금 진행/확정된 내 동행 (없으면 방금 완료해서 메모를 쓸 수 있는 동행) */
 function pickActive(apps: MyApplication[] | null) {
-  return (apps ?? [])
-    .filter((a) => a.status === 'ACCEPTED' && (a.requestStatus === 'CONFIRMED' || a.requestStatus === 'IN_PROGRESS'))
+  const list = (apps ?? []).filter((a) => a.status === 'ACCEPTED')
+  const ongoing = list
+    .filter((a) => a.requestStatus === 'IN_PROGRESS' || a.requestStatus === 'CONFIRMED')
     .sort((a, b) => `${a.date}${a.meetTime}`.localeCompare(`${b.date}${b.meetTime}`))[0]
+  if (ongoing) return ongoing
+  return list
+    .filter((a) => a.requestStatus === 'COMPLETED')
+    .sort((a, b) => `${b.date}${b.meetTime}`.localeCompare(`${a.date}${a.meetTime}`))[0]
 }
 
 /** 03 홈 */
@@ -68,7 +73,7 @@ export function VolunteerHome() {
           <span style={{ fontSize: 19, fontWeight: 700 }}>{active.hospitalName}</span>
           <span style={{ fontSize: 14 }}>{formatDate(active.date)}</span>
           <Link className="btn btn--sm btn--on-dark" to={`/volunteer/progress?visitId=${active.visitId}`}>
-            동행 시작하기
+            {active.requestStatus === 'COMPLETED' ? '진료 메모 쓰기 · 상세' : '동행 시작하기'}
           </Link>
         </section>
       )}
@@ -417,17 +422,37 @@ export function VolunteerMyPage() {
   const apps = useApi(() => applicationApi.mine(), [])
   const p = profile.data
 
-  const history = (apps.data ?? []).map((a) => {
+  const appList = apps.data ?? []
+  const completedApps = appList.filter((a) => a.status === 'ACCEPTED' && (a.requestStatus === 'COMPLETED' || a.requestStatus === 'APPROVED'))
+  // 시연 중 30분 미만 체크아웃으로 BE 인정 시간이 0분으로 내려올 때도 최소 30분으로 표시해요
+  const effectiveMinutes = (a: MyApplication) => {
+    const raw = a.approvedMinutes ?? a.recognizedMinutes ?? 0
+    if (raw > 0) return raw
+    return a.requestStatus === 'COMPLETED' || a.requestStatus === 'APPROVED' ? 30 : 0
+  }
+  const calcCount = Math.max(p?.visitCount ?? 0, completedApps.length)
+  const calcMinutes = Math.max(
+    p?.totalMinutes ?? 0,
+    completedApps.reduce((sum, a) => sum + effectiveMinutes(a), 0),
+  )
+
+  const history = appList.map((a) => {
     const label = a.status === 'ACCEPTED' ? REQUEST_STATUS_LABEL[a.requestStatus] : APPLICATION_STATUS_LABEL[a.status]
     const tone: 'green' | 'gray' = a.status === 'ACCEPTED' && a.requestStatus !== 'CANCELED' ? 'green' : 'gray'
-    const minutes = a.approvedMinutes ?? a.recognizedMinutes
+    const minutes = effectiveMinutes(a)
     const cancelable = (a.status === 'PENDING' || a.status === 'ACCEPTED') && (a.requestStatus === 'RECRUITING' || a.requestStatus === 'CONFIRMED')
+    const detailTo = a.visitId
+      ? `/volunteer/progress?visitId=${a.visitId}`
+      : `/volunteer/request-detail?requestId=${a.requestId}`
+    const memoTo = a.visitId && (a.requestStatus === 'COMPLETED' || a.requestStatus === 'APPROVED') ? `/volunteer/memo?visitId=${a.visitId}` : null
     return {
       id: a.applicationId,
       date: formatDate(a.date) + (minutes ? ` · ${minutesToText(minutes)} 인정` : ''),
       hospital: a.hospitalName,
       label,
       tone,
+      detailTo,
+      memoTo,
       cancelTo: cancelable ? `/volunteer/cancel?applicationId=${a.applicationId}&date=${a.date}&hospital=${encodeURIComponent(a.hospitalName)}` : null,
     }
   })
@@ -454,8 +479,8 @@ export function VolunteerMyPage() {
       <ModeSwitchCard current="VOLUNTEER" />
       <div className="row" style={{ gap: 10 }}>
         {[
-          [`${p?.visitCount ?? 0}회`, '누적 동행'],
-          [minutesToText(p?.totalMinutes ?? 0), '봉사시간'],
+          [`${calcCount}회`, '누적 동행'],
+          [minutesToText(calcMinutes), '봉사시간'],
           [`${p?.thanksMessages?.length ?? 0}개`, '감사 메시지'],
         ].map(([v, l]) => (
           <div key={l} className="card fill" style={{ alignItems: 'center', gap: 2, padding: '14px 0', borderRadius: 16 }}>
@@ -466,17 +491,23 @@ export function VolunteerMyPage() {
       </div>
       <div className="row row--between">
         <span className="t-h2">활동 내역</span>
-        <span className="t-sub t-medium">전체보기</span>
+        <span className="t-sub t-medium">{history.length}건</span>
       </div>
       <Status loading={apps.loading} error={apps.error} />
-      <div className="card card--list">
+      {!apps.loading && history.length === 0 && <p className="t-sub">아직 신청하거나 진행한 동행 내역이 없어요.</p>}
+      <div className="card card--list" hidden={history.length === 0}>
         {history.map((h) => (
-          <div key={h.id} className="list-item">
-            <div className="col fill" style={{ gap: 2 }}>
+          <div key={h.id} className="list-item" style={{ gap: 8 }}>
+            <Link to={h.detailTo} className="col fill" style={{ gap: 2, textDecoration: 'none', color: 'inherit' }}>
               <span className="t-body t-bold">{h.hospital}</span>
               <span className="t-caption">{h.date}</span>
-            </div>
+            </Link>
             <Chip tone={h.tone}>{h.label}</Chip>
+            {h.memoTo && (
+              <Link to={h.memoTo} className="t-sub t-bold t-primary" style={{ minHeight: 44, display: 'flex', alignItems: 'center', paddingLeft: 6 }}>
+                메모 쓰기
+              </Link>
+            )}
             {h.cancelTo && (
               <Link to={h.cancelTo} className="t-sub t-bold t-accent" style={{ minHeight: 44, display: 'flex', alignItems: 'center', paddingLeft: 6 }}>
                 신청 취소
@@ -493,6 +524,15 @@ export function VolunteerMyPage() {
           </button>
         ))}
       </div>
+      <Button
+        variant="ghost"
+        onClick={() => {
+          logout()
+          navigate('/login', { replace: true })
+        }}
+      >
+        로그아웃
+      </Button>
     </Screen>
   )
 }

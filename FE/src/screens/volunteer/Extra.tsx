@@ -117,7 +117,7 @@ export function VolunteerCertificate() {
                 <span className="t-body t-bold">{a.hospitalName}</span>
                 <span className="t-caption">
                   {formatDate(a.date)}
-                  {a.approvedMinutes ? ` · ${minutesToText(a.approvedMinutes)} 인정` : ''}
+                  {a.approvedMinutes ? ` · ${minutesToText(a.approvedMinutes || 30)} 인정` : ''}
                 </span>
               </span>
               <Icon name="chev" size={20} color="var(--icon-muted)" />
@@ -147,7 +147,7 @@ export function VolunteerCertificate() {
         ['활동일', fullDate(c.date)],
         ['활동 장소', c.hospitalName],
         ['활동 시간', `${ampm(c.startedAt)} ~ ${ampm(c.endedAt)}`],
-        ['인정 시간', minutesToText(c.approvedMinutes)],
+        ['인정 시간', minutesToText(c.approvedMinutes || 30)],
         ['승인일', fullDate(c.approvedAt).replace(/ \(.\)$/, '')],
       ]
     : []
@@ -172,11 +172,11 @@ export function VolunteerCertificate() {
               ))}
             </div>
             <p style={{ margin: '10px 0 0', fontSize: 14, lineHeight: 1.7, textAlign: 'center', color: 'var(--chip-gray-ink)' }}>
-              위 사람은 같이가요를 통해
+              위 사람은 같이가요를 통해 병원 동행 봉사를 마쳤으며,
               <br />
-              병원 동행 봉사를 마쳤으며,
+              요청한 분이 실제 소요 시간을 승인했음을 확인합니다.
               <br />
-              요청한 분이 봉사시간을 승인했음을 확인합니다.
+              <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>(협약 대학 사회봉사센터 및 지자체 수요처 제출용 증빙)</span>
             </p>
           </section>
           <p className="t-caption" style={{ fontSize: 14, padding: '0 4px' }}>
