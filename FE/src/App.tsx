@@ -37,18 +37,8 @@ function Gallery() {
 }
 
 /** 데스크톱에서는 화면 위에 이름과 '목록으로' 링크를 보여줘요 */
-function ScreenShell({ route, children }: { route: ScreenRoute; children: ReactElement }) {
-  return (
-    <div className="screen-shell">
-      <div className="screen-shell__nav">
-        <Link to="/">← 화면 목록</Link>
-        <span>
-          {route.code} {route.name}
-        </span>
-      </div>
-      {children}
-    </div>
-  )
+function ScreenShell({ children }: { route: ScreenRoute; children: ReactElement }) {
+  return <div className="screen-shell">{children}</div>
 }
 
 /** 로그인해야 볼 수 있는 화면: 두 모드의 화면 */
@@ -80,14 +70,15 @@ export default function App() {
     <AuthProvider>
       <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Gallery />} />
+        <Route path="/" element={<Navigate to="/start" replace />} />
+        <Route path="/dev" element={<Gallery />} />
         {allRoutes.map((r) => (
           <Route key={r.path} path={r.path} element={<ScreenShell route={r}>{isProtected(r.path) ? <Guard path={r.path}>{r.element}</Guard> : r.element}</ScreenShell>} />
         ))}
         {Object.entries(legacyRedirects).map(([from, to]) => (
           <Route key={from} path={from} element={<Navigate to={to} replace />} />
         ))}
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="*" element={<Navigate to="/start" replace />} />
       </Routes>
       </BrowserRouter>
     </AuthProvider>
