@@ -58,28 +58,158 @@ function useTargetRequestId() {
   return { requestId: fromUrl || pickActive(mine.data)?.requestId || 0, loading: mine.loading, error: mine.error }
 }
 
+const SELECTED_TARGET_KEY = 'hospital-companion.selected-target'
+
 /** G01 홈 */
 export function GuardianHome() {
+  const { session } = useAuth()
   const mine = useApi(() => requestApi.mine(), [])
   const seniors = useApi(() => profileApi.mySeniors(), [])
-  const active = pickActive(mine.data)
+  const [menuOpen, setMenuOpen] = useState(false)
+  const [selectedTarget, setSelectedTarget] = useState<string>(() => localStorage.getItem(SELECTED_TARGET_KEY) ?? '')
+
+  const seniorList = seniors.data ?? []
+  const effectiveTarget =
+    selectedTarget === 'SELF' || seniorList.some((s) => String(s.seniorId) === selectedTarget)
+      ? selectedTarget
+      : seniorList[0]
+        ? String(seniorList[0].seniorId)
+        : 'SELF'
+
+  const chosenSenior = seniorList.find((s) => String(s.seniorId) === effectiveTarget) ?? null
+  const currentLabel = chosenSenior ? `${chosenSenior.name} 님` : '나'
+
+  const selectTarget = (val: string) => {
+    setSelectedTarget(val)
+    try {
+      localStorage.setItem(SELECTED_TARGET_KEY, val)
+    } catch {
+      /* noop */
+    }
+    setMenuOpen(false)
+  }
+
+  const targetName = chosenSenior ? chosenSenior.name : session?.name
+  const filteredMine =
+    mine.data && targetName && mine.data.some((r) => r.seniorName === targetName)
+      ? mine.data.filter((r) => r.seniorName === targetName)
+      : mine.data
+
+  const active = pickActive(filteredMine ?? null)
   const { visit } = useVisitByRequest(active?.requestId)
   const v = visit.data
   const checklist = v?.checklist ?? []
   const nowIdx = checklist.findIndex((s) => !s.done)
 
-  const upcoming = (mine.data ?? [])
+  const upcoming = (filteredMine ?? [])
     .filter((r) => r.status === 'RECRUITING' || r.status === 'CONFIRMED')
     .sort((a, b) => a.date.localeCompare(b.date))
 
+  const applyUrl = chosenSenior ? `/guardian/apply?target=FAMILY&seniorId=${chosenSenior.seniorId}` : '/guardian/apply?target=SELF'
+
   return (
     <Screen footer={tabs}>
-      <div className="row row--between">
-        <span className="row" style={{ gap: 8, padding: '6px 14px 6px 8px', borderRadius: 999, background: '#fff', boxShadow: 'inset 0 0 0 1.5px var(--line-soft)', fontSize: 15, fontWeight: 700 }}>
+      <div className="row row--between" style={{ position: 'relative' }}>
+        <button
+          type="button"
+          className="row"
+          aria-expanded={menuOpen}
+          aria-haspopup="listbox"
+          onClick={() => setMenuOpen((o) => !o)}
+          style={{
+            gap: 8,
+            padding: '6px 14px 6px 8px',
+            borderRadius: 999,
+            background: '#fff',
+            border: 0,
+            boxShadow: 'inset 0 0 0 1.5px var(--line-soft)',
+            fontSize: 15,
+            fontWeight: 700,
+            cursor: 'pointer',
+          }}
+        >
           <CharacterAvatar who="elder" size={28} />
-          {seniors.data?.[0] ? `${seniors.data[0].name} 님` : '나'}
+          {currentLabel}
           <Icon name="down" size={16} />
-        </span>
+        </button>
+        {menuOpen && (
+          <div
+            role="listbox"
+            className="card"
+            style={{
+              position: 'absolute',
+              top: 48,
+              left: 0,
+              zIndex: 30,
+              minWidth: 210,
+              padding: 8,
+              gap: 4,
+              boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => selectTarget('SELF')}
+              className="row row--between"
+              style={{
+                padding: '10px 12px',
+                borderRadius: 10,
+                border: 0,
+                background: effectiveTarget === 'SELF' ? 'var(--bg-canvas)' : 'transparent',
+                fontWeight: effectiveTarget === 'SELF' ? 700 : 500,
+                fontSize: 15,
+                cursor: 'pointer',
+                textAlign: 'left',
+              }}
+            >
+              <span>나{session?.name ? ` · ${session.name}` : ''}</span>
+              {effectiveTarget === 'SELF' && <Icon name="check" size={18} />}
+            </button>
+            {seniorList.map((s) => {
+              const isSel = effectiveTarget === String(s.seniorId)
+              return (
+                <button
+                  key={s.seniorId}
+                  type="button"
+                  onClick={() => selectTarget(String(s.seniorId))}
+                  className="row row--between"
+                  style={{
+                    padding: '10px 12px',
+                    borderRadius: 10,
+                    border: 0,
+                    background: isSel ? 'var(--bg-canvas)' : 'transparent',
+                    fontWeight: isSel ? 700 : 500,
+                    fontSize: 15,
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                  }}
+                >
+                  <span>
+                    {s.name} 님 <span className="t-caption">({s.region})</span>
+                  </span>
+                  {isSel && <Icon name="check" size={18} />}
+                </button>
+              )
+            })}
+            <Link
+              to="/guardian/senior/new"
+              onClick={() => setMenuOpen(false)}
+              className="row"
+              style={{
+                padding: '10px 12px',
+                borderRadius: 10,
+                fontSize: 14,
+                fontWeight: 700,
+                color: 'var(--brand-primary)',
+                textDecoration: 'none',
+                borderTop: '1px solid var(--line-soft)',
+                marginTop: 2,
+              }}
+            >
+              + 동행받는 분 추가
+            </Link>
+          </div>
+        )}
         <span className="row" style={{ gap: 4 }}>
           <BellButton />
           <ModeSwitchButton current="REQUEST" />
@@ -152,7 +282,7 @@ export function GuardianHome() {
 
       </div>
       <Spacer />
-      <Button to="/guardian/apply">새 동행 신청하기</Button>
+      <Button to={applyUrl}>새 동행 신청하기</Button>
     </Screen>
   )
 }
@@ -164,8 +294,9 @@ export function GuardianApply() {
   const hospitals = useApi(() => profileApi.hospitals(), [])
   const submit = useAction()
 
-  const [targetType, setTargetType] = useState<TargetType>('FAMILY')
-  const [seniorId, setSeniorId] = useState('')
+  const [params] = useSearchParams()
+  const [targetType, setTargetType] = useState<TargetType>(() => (params.get('target') === 'SELF' ? 'SELF' : 'FAMILY'))
+  const [seniorId, setSeniorId] = useState(() => params.get('seniorId') ?? '')
   const [travelMode, setTravelMode] = useState<TravelMode>('BUS_TRAIN')
   const [hospitalId, setHospitalId] = useState('')
   const [department, setDepartment] = useState('')
