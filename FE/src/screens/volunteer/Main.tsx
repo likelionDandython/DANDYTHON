@@ -407,6 +407,11 @@ export function VolunteerProgress() {
                 </Button>
               )}
             </div>
+            {v.endedAt && (
+              <Button variant="ghost" to="/volunteer/home">
+                메모 없이 완료하기 (홈으로)
+              </Button>
+            )}
           </>
         )}
       </div>
@@ -467,13 +472,22 @@ export function VolunteerMyPage() {
         </div>
         <button
           type="button"
-          aria-label="로그아웃"
           onClick={() => {
             logout()
             navigate('/login', { replace: true })
           }}
+          style={{
+            padding: '8px 12px',
+            borderRadius: 999,
+            background: 'var(--bg-surface)',
+            boxShadow: 'inset 0 0 0 1px var(--line-default)',
+            fontSize: 13,
+            fontWeight: 700,
+            color: 'var(--text-secondary)',
+            flexShrink: 0,
+          }}
         >
-          <Icon name="gear" color="var(--text-secondary)" />
+          로그아웃
         </button>
       </div>
       <ModeSwitchCard current="VOLUNTEER" />

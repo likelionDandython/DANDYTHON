@@ -33,12 +33,15 @@ const tabs = <TabBar tabs={GUARDIAN_TABS} />
 const STATION_QUICK_PLACES = ['동대구역', '동대구터미널', '북부정류장', '서부정류장'] as const
 
 
-/** 지금 동행 중인 요청 → 없으면 가장 가까운 확정 요청 */
+/** 지금 동행 중인 요청 → 없으면 가장 가까운 확정 요청 → 없으면 최근 완료 건 */
 function pickActive(list: MyRequestItem[] | null) {
   const items = list ?? []
   const byDate = (a: MyRequestItem, b: MyRequestItem) => a.date.localeCompare(b.date)
+  const byDateDesc = (a: MyRequestItem, b: MyRequestItem) => b.date.localeCompare(a.date) || b.requestId - a.requestId
   return (
-    items.filter((r) => r.status === 'IN_PROGRESS').sort(byDate)[0] ?? items.filter((r) => r.status === 'CONFIRMED').sort(byDate)[0]
+    items.filter((r) => r.status === 'IN_PROGRESS').sort(byDate)[0] ??
+    items.filter((r) => r.status === 'CONFIRMED').sort(byDate)[0] ??
+    items.filter((r) => r.status === 'COMPLETED' || r.status === 'APPROVED').sort(byDateDesc)[0]
   )
 }
 
@@ -221,14 +224,18 @@ export function GuardianHome() {
           <div className="row row--between" style={{ fontSize: 14 }}>
             <span className="row t-bold" style={{ gap: 6 }}>
               <span style={{ width: 8, height: 8, borderRadius: 4, background: 'var(--brand-accent)' }} />
-              {active.status === 'IN_PROGRESS' ? '지금 동행 중' : '동행 확정'}
+              {active.status === 'IN_PROGRESS' ? '지금 동행 중' : active.status === 'CONFIRMED' ? '동행 확정' : '동행 완료'}
             </span>
             <span style={{ fontSize: 13 }}>{formatDate(active.date)}</span>
           </div>
           <span style={{ fontSize: 21, fontWeight: 700, lineHeight: 1.4 }}>
             {active.hospitalName}
             <br />
-            {active.status === 'IN_PROGRESS' && nowIdx >= 0 ? `${checklist[nowIdx].label} 단계예요` : '동행을 준비하고 있어요'}
+            {active.status === 'IN_PROGRESS' && nowIdx >= 0
+              ? `${checklist[nowIdx].label} 단계예요`
+              : active.status === 'COMPLETED' || active.status === 'APPROVED'
+                ? '진료 기록과 요약을 확인해 보세요'
+                : '동행을 준비하고 있어요'}
           </span>
           {checklist.length > 0 && (
             <>
@@ -247,9 +254,15 @@ export function GuardianHome() {
               </div>
             </>
           )}
-          <Link className="btn btn--sm btn--on-dark" to={`/guardian/live?requestId=${active.requestId}`}>
-            동행 현황 보기
-          </Link>
+          {active.status === 'COMPLETED' || active.status === 'APPROVED' ? (
+            <Link className="btn btn--sm btn--on-dark" to={`/guardian/report?requestId=${active.requestId}`}>
+              진료 요약 · 기록 보기
+            </Link>
+          ) : (
+            <Link className="btn btn--sm btn--on-dark" to={`/guardian/live?requestId=${active.requestId}`}>
+              동행 현황 보기
+            </Link>
+          )}
         </section>
       )}
 
@@ -625,8 +638,13 @@ export function GuardianLive() {
             </div>
             {vol && <p className="t-caption" style={{ fontSize: 12 }}>{vol.name} 봉사자가 남긴 소식이에요</p>}
             <Spacer />
-            <div className="row" style={{ gap: 10 }}>
-              <Button className="fill" disabled={!vol} onClick={() => vol && (window.location.href = `tel:${vol.phone}`)}>
+            <div className="col" style={{ gap: 10 }}>
+              {v.endedAt && (
+                <Button to={`/guardian/report?requestId=${d.requestId}`}>
+                  오늘 진료 요약 · 기록 보기
+                </Button>
+              )}
+              <Button variant={v.endedAt ? 'secondary' : 'primary'} disabled={!vol} onClick={() => vol && (window.location.href = `tel:${vol.phone}`)}>
                 봉사자에게 전화
               </Button>
             </div>
@@ -803,8 +821,31 @@ export function GuardianMy() {
   const seniors = useApi(() => profileApi.mySeniors(), [])
   return (
     <Screen footer={tabs}>
-      <h1 className="t-h1">MY</h1>
-      <p className="t-sub">{session?.name} 님</p>
+      <div className="row row--between">
+        <div className="col" style={{ gap: 2 }}>
+          <h1 className="t-h1">MY</h1>
+          <p className="t-sub">{session?.name} 님</p>
+        </div>
+        <button
+          type="button"
+          onClick={() => {
+            logout()
+            navigate('/login', { replace: true })
+          }}
+          style={{
+            padding: '8px 12px',
+            borderRadius: 999,
+            background: 'var(--bg-surface)',
+            boxShadow: 'inset 0 0 0 1px var(--line-default)',
+            fontSize: 13,
+            fontWeight: 700,
+            color: 'var(--text-secondary)',
+            flexShrink: 0,
+          }}
+        >
+          로그아웃
+        </button>
+      </div>
       <ModeSwitchCard current="REQUEST" />
       <div className="row row--between">
         <span style={{ fontSize: 16, fontWeight: 700 }}>동행받는 분</span>
