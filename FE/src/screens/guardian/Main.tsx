@@ -300,8 +300,8 @@ export function GuardianApply() {
   const [travelMode, setTravelMode] = useState<TravelMode>('BUS_TRAIN')
   const [hospitalId, setHospitalId] = useState('')
   const [department, setDepartment] = useState('')
-  const [date, setDate] = useState('')
-  const [meetTime, setMeetTime] = useState('')
+  const [date, setDate] = useState(() => todayString())
+  const [meetTime, setMeetTime] = useState('23:59')
   const [meetPlaceType, setMeetPlaceType] = useState<MeetPlaceType>('HOME')
   const [meetAddress, setMeetAddress] = useState('')
   const [needs, setNeeds] = useState<Need[]>([])
@@ -313,7 +313,13 @@ export function GuardianApply() {
     if ((targetType === 'FAMILY' && !seniorId) || !hospitalId || !department.trim() || !date || !meetTime || !meetAddress.trim()) {
       return submit.setError('동행받는 분, 병원, 진료과, 날짜·시간, 만나는 장소를 모두 입력해 주세요.')
     }
+    if (needs.length === 0) return submit.setError('필요한 도움을 하나 이상 골라 주세요.')
     if (date < todayString()) return submit.setError('과거 날짜는 선택할 수 없어요.')
+    const now = new Date()
+    const nowHHMM = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
+    if (date === todayString() && meetTime < nowHHMM) {
+      return submit.setError('오늘 날짜는 현재 시각 이후 시간으로 선택해 주세요. (지난 시간은 게시판에 올라오지 않아요)')
+    }
     const res = await submit.run(() =>
       requestApi.create({
         targetType,
@@ -689,7 +695,7 @@ export function GuardianReport() {
       {v && v.hasSummary === false && <p className="t-body">아직 봉사자가 진료 요약을 작성하지 않았어요.</p>}
       {sum && (
         <p className="t-caption" style={{ margin: '0 4px', fontSize: 15, lineHeight: 1.6 }}>
-          괜찮다는 말씀 뒤에 담긴 오늘의 진료 기록이에요
+          동행받는 분의 '괜찮다'는 말씀 뒤에 담긴 오늘의 진료 기록이에요
         </p>
       )}
       {sum && (
