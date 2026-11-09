@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { Icon } from './Icon'
 
 /** Figma: Chip (Tone = Green | Orange | Gray) — 상태 표시용 */
 export function Chip({ tone = 'green', children }: { tone?: 'green' | 'orange' | 'gray'; children: string }) {
@@ -39,7 +38,6 @@ export function ToggleChipGroup({
               aria-pressed={on}
               onClick={() => toggle(o)}
             >
-              {on && <Icon name="check" size={15} strokeWidth={2.6} />}
               {o}
             </button>
           )

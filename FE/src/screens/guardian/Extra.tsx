@@ -47,7 +47,7 @@ export function GuardianVolunteerView() {
               {p.verified && <Chip tone="green">재학 인증</Chip>}
               {neighbor && <HometownBadge />}
               <Chip tone="gray">{`동행 ${p.visitCount}회`}</Chip>
-              <Chip tone="gray">{minutesToText(p.totalMinutes)}</Chip>
+              <Chip tone="gray">{`${minutesToText(p.totalMinutes)} (30분 단위 내림)`}</Chip>
             </span>
           </div>
           {p.intro && (

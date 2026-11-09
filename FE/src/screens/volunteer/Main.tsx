@@ -429,12 +429,7 @@ export function VolunteerMyPage() {
 
   const appList = apps.data ?? []
   const completedApps = appList.filter((a) => a.status === 'ACCEPTED' && (a.requestStatus === 'COMPLETED' || a.requestStatus === 'APPROVED'))
-  // 시연 중 30분 미만 체크아웃으로 BE 인정 시간이 0분으로 내려올 때도 최소 30분으로 표시해요
-  const effectiveMinutes = (a: MyApplication) => {
-    const raw = a.approvedMinutes ?? a.recognizedMinutes ?? 0
-    if (raw > 0) return raw
-    return a.requestStatus === 'COMPLETED' || a.requestStatus === 'APPROVED' ? 30 : 0
-  }
+  const effectiveMinutes = (a: MyApplication) => a.approvedMinutes ?? a.recognizedMinutes ?? 0
   const calcCount = Math.max(p?.visitCount ?? 0, completedApps.length)
   const calcMinutes = Math.max(
     p?.totalMinutes ?? 0,
@@ -444,7 +439,7 @@ export function VolunteerMyPage() {
   const history = appList.map((a) => {
     const label = a.status === 'ACCEPTED' ? REQUEST_STATUS_LABEL[a.requestStatus] : APPLICATION_STATUS_LABEL[a.status]
     const tone: 'green' | 'gray' = a.status === 'ACCEPTED' && a.requestStatus !== 'CANCELED' ? 'green' : 'gray'
-    const minutes = effectiveMinutes(a)
+    const rawMinutes = a.approvedMinutes ?? a.recognizedMinutes
     const cancelable = (a.status === 'PENDING' || a.status === 'ACCEPTED') && (a.requestStatus === 'RECRUITING' || a.requestStatus === 'CONFIRMED')
     const detailTo = a.visitId
       ? `/volunteer/progress?visitId=${a.visitId}`
@@ -452,7 +447,7 @@ export function VolunteerMyPage() {
     const memoTo = a.visitId && (a.requestStatus === 'COMPLETED' || a.requestStatus === 'APPROVED') ? `/volunteer/memo?visitId=${a.visitId}` : null
     return {
       id: a.applicationId,
-      date: formatDate(a.date) + (minutes ? ` · ${minutesToText(minutes)} 인정` : ''),
+      date: formatDate(a.date) + (rawMinutes != null ? ` · ${minutesToText(rawMinutes)} 인정` : ''),
       hospital: a.hospitalName,
       label,
       tone,
@@ -503,6 +498,9 @@ export function VolunteerMyPage() {
           </div>
         ))}
       </div>
+      <p className="t-caption" style={{ margin: '-6px 4px 0', color: 'var(--text-secondary)' }}>
+        ※ 인정 봉사시간은 만남~배웅 실소요 시간을 30분 단위 내림으로 산정해요.
+      </p>
       <div className="row row--between">
         <span className="t-h2">활동 내역</span>
         <span className="t-sub t-medium">{history.length}건</span>

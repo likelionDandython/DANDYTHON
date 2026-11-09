@@ -117,7 +117,7 @@ export function VolunteerCertificate() {
                 <span className="t-body t-bold">{a.hospitalName}</span>
                 <span className="t-caption">
                   {formatDate(a.date)}
-                  {a.approvedMinutes ? ` · ${minutesToText(a.approvedMinutes || 30)} 인정` : ''}
+                  {a.approvedMinutes != null ? ` · ${minutesToText(a.approvedMinutes)} 인정` : ''}
                 </span>
               </span>
               <Icon name="chev" size={20} color="var(--icon-muted)" />
@@ -147,7 +147,7 @@ export function VolunteerCertificate() {
         ['활동일', fullDate(c.date)],
         ['활동 장소', c.hospitalName],
         ['활동 시간', `${ampm(c.startedAt)} ~ ${ampm(c.endedAt)}`],
-        ['인정 시간', minutesToText(c.approvedMinutes || 30)],
+        ['인정 시간', minutesToText(c.approvedMinutes)],
         ['승인일', fullDate(c.approvedAt).replace(/ \(.\)$/, '')],
       ]
     : []
@@ -167,7 +167,14 @@ export function VolunteerCertificate() {
               {rows.map(([k, v], i) => (
                 <div key={k} className="row" style={{ gap: 12, padding: '13px 0', alignItems: 'flex-start', borderBottom: i < rows.length - 1 ? '1px dashed var(--line-default)' : 'none' }}>
                   <span style={{ width: 84, flexShrink: 0, fontSize: 14, color: 'var(--text-secondary)' }}>{k}</span>
-                  <span style={{ flex: 1, fontSize: k === '인정 시간' ? 18 : 16, fontWeight: k === '인정 시간' ? 700 : 500, lineHeight: 1.5 }}>{v}</span>
+                  <span style={{ flex: 1, fontSize: k === '인정 시간' ? 18 : 16, fontWeight: k === '인정 시간' ? 700 : 500, lineHeight: 1.5 }}>
+                    {v}
+                    {k === '인정 시간' && (
+                      <span style={{ marginLeft: 6, fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}>
+                        (30분 단위 내림 산정)
+                      </span>
+                    )}
+                  </span>
                 </div>
               ))}
             </div>
