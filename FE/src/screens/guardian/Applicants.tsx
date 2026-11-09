@@ -51,6 +51,7 @@ export function GuardianApplicants() {
       <TopBar title="신청자 보기" />
       {loading && <p className="t-caption">불러오는 중…</p>}
       <ErrorText>{error}</ErrorText>
+      {!requestId && <ErrorText>요청을 선택해 주세요. (요청 화면에서 들어와요)</ErrorText>}
 
       {!loading && !error && list.length === 0 && (
         <div className="col center" style={{ alignItems: 'center', gap: 18, flex: 1, justifyContent: 'center', padding: '0 12px' }}>
@@ -195,6 +196,7 @@ export function GuardianApplicantConfirm() {
       <TopBar title="함께 갈 봉사자 확정" />
       {apps.loading && <p className="t-caption">불러오는 중…</p>}
       <ErrorText>{apps.error ?? act.error}</ErrorText>
+      {(!requestId || !applicationId) && <ErrorText>봉사자를 선택해 주세요. (신청자 목록에서 들어와요)</ErrorText>}
       {a && (
         <>
           <section className="hero hero--teal hero--center">

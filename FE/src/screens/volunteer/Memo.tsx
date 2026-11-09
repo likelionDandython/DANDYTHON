@@ -289,6 +289,7 @@ export function VolunteerMemoDone() {
       </div>
       {s.loading && <p className="t-caption">불러오는 중…</p>}
       <ErrorText>{s.error}</ErrorText>
+      {!visitId && <ErrorText>동행을 선택해 주세요. (동행 진행 화면에서 들어와요)</ErrorText>}
       {sum && (
         <div className="card" style={{ gap: 12 }}>
           <span className="t-body t-bold">오늘 들은 내용</span>
@@ -332,6 +333,7 @@ export function VolunteerMemoFallback() {
       </div>
       {s.loading && <p className="t-caption">불러오는 중…</p>}
       <ErrorText>{s.error}</ErrorText>
+      {!visitId && <ErrorText>동행을 선택해 주세요. (동행 진행 화면에서 들어와요)</ErrorText>}
       {s.data && (
         <div className="card" style={{ gap: 8 }}>
           <span className="t-caption t-bold">전달된 메모</span>
