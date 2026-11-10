@@ -1,0 +1,25 @@
+/* 같이가요 시안(11/4) 색. 청록 = 봉사자·기본, 코랄 = 동행받는 분. 배경은 흰색 */
+:root {
+  --brand-primary: #127d73;
+  --brand-primary-soft: #ddf3ec;
+  --brand-accent: #f68975; /* 코랄: 채우기·점용. 글자는 --accent-ink */
+  --brand-accent-soft: #ffe6de;
+  --bg-canvas: #ffffff;
+  --bg-surface: #ffffff;
+  --text-primary: #1f2a27;
+  --text-secondary: #55605c;
+  --text-on-primary: #ffffff;
+  --line-default: #e6d8cc;
+  --icon-muted: #9a9f9c;
+
+  --radius-sm: 12px;
+  --radius-md: 14px;
+  --radius-lg: 18px;
+  --radius-xl: 22px;
+  --radius-pill: 999px;
+
+  --screen-w: 390px;
+  --screen-h: 844px;
+
+  --font: 'Noto Sans KR', 'Noto Sans CJK KR', 'Apple SD Gothic Neo', system-ui, -apple-system, sans-serif;
+}
