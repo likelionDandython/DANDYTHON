@@ -1,5 +1,6 @@
 server:
-  port: ${PORT:8080}   # 배포 서버가 PORT를 주면 그걸 쓰고, 로컬은 8080
+  port: ${PORT:8080}
+  forward-headers-strategy: framework   # 배포 서버가 PORT를 주면 그걸 쓰고, 로컬은 8080
 
 spring:
   profiles:
